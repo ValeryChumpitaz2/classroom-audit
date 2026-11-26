@@ -55,15 +55,14 @@ async function getPaginatedCollection(endpoint, resultKey) {
 }
 
 function isEligibleClassroomCourse(course) {
-  const name = String(course?.name || "").toUpperCase();
-  return CLASSROOM_ELIGIBLE_CODES.some(code => name.includes(code));
+  // Todos los cursos activos se conservan; los códigos conocidos solo
+  // permiten identificar el semestre, no excluir cursos.
+  return course?.courseState === "ACTIVE";
 }
 
 async function getAllCourses() {
   const courses = await getPaginatedCollection("/courses", "courses");
-  return courses.filter(course =>
-    course?.courseState === "ACTIVE" && isEligibleClassroomCourse(course)
-  );
+  return courses.filter(course => course?.courseState === "ACTIVE");
 }
 
 async function getCourseCollection(courseId, collection) {

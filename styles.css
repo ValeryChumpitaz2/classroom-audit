@@ -2433,3 +2433,176 @@ body.dark-mode .audit-topic-card {
     align-self: flex-start;
   }
 }
+
+
+/* =========================================================
+   30. AJUSTES DE INTEGRACIÓN Y CONTRASTE
+========================================================= */
+
+/* La visibilidad de las vistas depende del estado controlado por app.js. */
+.view-section[hidden] {
+  display: none !important;
+}
+.view-section.active:not([hidden]) {
+  display: block;
+}
+
+/* Evita que los controles nativos conserven colores claros en tema oscuro. */
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+  color: var(--text);
+  background-color: var(--surface);
+  border-color: var(--border-strong);
+}
+body.dark-mode input::placeholder,
+body.dark-mode textarea::placeholder {
+  color: var(--text-muted);
+}
+body.dark-mode option {
+  color: var(--text);
+  background: var(--surface);
+}
+
+/* Superficies de componentes estáticos y generados dinámicamente. */
+body.dark-mode .content-card,
+body.dark-mode .metric-card,
+body.dark-mode .google-account-card,
+body.dark-mode .course-card,
+body.dark-mode .finding-card,
+body.dark-mode .finding-item,
+body.dark-mode .report-card,
+body.dark-mode .audit-section,
+body.dark-mode .detail-section,
+body.dark-mode .table-container,
+body.dark-mode .sidebar-footer-card,
+body.dark-mode .search-box,
+body.dark-mode .filters-row select,
+body.dark-mode .filter-control select,
+body.dark-mode .theme-toggle,
+body.dark-mode .connection-indicator,
+body.dark-mode .btn-secondary {
+  color: var(--text);
+  background-color: var(--surface);
+  border-color: var(--border);
+}
+
+body.dark-mode .sidebar,
+body.dark-mode .topbar,
+body.dark-mode .main-content,
+body.dark-mode .app-container {
+  color: var(--text);
+}
+
+body.dark-mode .page-header h1,
+body.dark-mode .section-heading h2,
+body.dark-mode .card-header h2,
+body.dark-mode .metric-value,
+body.dark-mode .course-info h3,
+body.dark-mode .finding-content h3,
+body.dark-mode .report-content h2,
+body.dark-mode .audit-detail h2,
+body.dark-mode .audit-detail h3,
+body.dark-mode .course-detail h2,
+body.dark-mode .course-detail h3,
+body.dark-mode .audit-item strong,
+body.dark-mode .detail-item strong,
+body.dark-mode td,
+body.dark-mode .account-details strong {
+  color: var(--text);
+}
+
+body.dark-mode .page-header p,
+body.dark-mode .section-heading p,
+body.dark-mode .card-header p,
+body.dark-mode .metric-description,
+body.dark-mode .course-info p,
+body.dark-mode .finding-content p,
+body.dark-mode .report-content p,
+body.dark-mode .audit-section p,
+body.dark-mode .detail-section p,
+body.dark-mode .audit-item span,
+body.dark-mode .detail-item span,
+body.dark-mode .account-details span,
+body.dark-mode .account-status,
+body.dark-mode .breadcrumb {
+  color: var(--text-secondary);
+}
+
+body.dark-mode .nav-item {
+  color: var(--text-secondary);
+}
+body.dark-mode .nav-item:hover,
+body.dark-mode .nav-item.active {
+  color: var(--primary-dark);
+  background: var(--primary-light);
+}
+body.dark-mode .course-card:hover,
+body.dark-mode tbody tr:hover {
+  background: var(--primary-soft);
+  border-color: var(--border-strong);
+}
+body.dark-mode thead,
+body.dark-mode .table-container thead {
+  background: var(--surface-secondary);
+}
+body.dark-mode th {
+  color: var(--text-secondary);
+}
+body.dark-mode td,
+body.dark-mode .audit-item,
+body.dark-mode .detail-item {
+  border-color: var(--border);
+}
+body.dark-mode .progress-track {
+  background: var(--surface-secondary);
+}
+body.dark-mode .empty-state h3 {
+  color: var(--text);
+}
+body.dark-mode .empty-state p {
+  color: var(--text-secondary);
+}
+body.dark-mode .toast {
+  color: var(--text);
+  background: var(--surface);
+  border-color: var(--border);
+}
+body.dark-mode .toast-close {
+  color: var(--text-secondary);
+}
+body.dark-mode .btn-primary {
+  color: #17283e;
+}
+body.dark-mode .btn-secondary:hover,
+body.dark-mode .theme-toggle:hover {
+  color: var(--primary-dark);
+  background: var(--primary-soft);
+}
+body.dark-mode .status-badge,
+body.dark-mode .badge,
+body.dark-mode .finding-badge {
+  border: 1px solid transparent;
+}
+body.dark-mode .sidebar-overlay.show {
+  background: rgba(3, 8, 15, 0.62);
+}
+
+/* Clases utilizadas por el detalle dinámico y sus estados. */
+body.dark-mode .detail-item,
+body.dark-mode .audit-item,
+body.dark-mode .audit-list,
+body.dark-mode .detail-list {
+  color: var(--text);
+}
+body.dark-mode .course-code,
+body.dark-mode .course-name,
+body.dark-mode .checklist,
+body.dark-mode .api-details,
+body.dark-mode .api-details summary {
+  color: var(--text);
+}
+body.dark-mode .api-details,
+body.dark-mode .check-item {
+  border-color: var(--border);
+}

@@ -11,8 +11,8 @@
     const STORAGE_KEY = "classroom-audit-v3";
     const THEME_KEY = "classroom-audit-theme";
 
-    // SOLO SP1, SP2, SP3 Y SP4.
-    // SP5 queda fuera de toda evaluación.
+    // Códigos conocidos para identificar SP1-SP4.
+    // Los cursos que no coincidan también se conservan y se auditan.
     const semesterMap = [
         { code: "ASE261_POO", semester: 2, sp: "SP1" },
         { code: "ASE252_PFE", semester: 3, sp: "SP2" },
@@ -145,9 +145,8 @@
     }
 
     function getEligibleCourses(courses) {
-        return safeArray(courses).filter(course =>
-            getSemester(course?.name) !== null
-        );
+        // No excluir cursos por no coincidir con los cuatro códigos conocidos.
+        return safeArray(courses);
     }
 
     function getCourseAudit(course) {
@@ -243,82 +242,49 @@
     // ======================================================
 
     function switchView(viewName) {
+        const validViews = ["overview", "courses", "findings", "reports"];
+        if (!validViews.includes(viewName)) return;
+
         activeView = viewName;
 
         document.querySelectorAll(".view-section").forEach(view => {
-            view.classList.remove("active");
-            view.hidden = true;
+            const isCurrent = view.id === `view-${viewName}` ||
+                view.dataset.section === viewName;
+            view.classList.toggle("active", isCurrent);
+            view.hidden = !isCurrent;
+            view.setAttribute("aria-hidden", String(!isCurrent));
         });
 
         document.querySelectorAll(".nav-item[data-view]").forEach(button => {
-            button.classList.toggle(
-                "active",
-                button.dataset.view === viewName
-            );
+            const isCurrent = button.dataset.view === viewName;
+            button.classList.toggle("active", isCurrent);
+            if (isCurrent) button.setAttribute("aria-current", "page");
+            else button.removeAttribute("aria-current");
         });
 
-        const view = getElement(`view-${viewName}`);
-        if (view) {
-            view.hidden = false;
-            view.classList.add("active");
-        }
-
         const labels = {
-            overview: "Overview",
+            overview: "Resumen",
             courses: "Cursos",
             findings: "Hallazgos",
-            reports: "Reportes"
+            reports: "Informes"
         };
-
-        setText("breadcrumbCurrent", labels[viewName] || viewName);
-
+        setText("breadcrumbCurrent", labels[viewName]);
         closeSidebar();
+        window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function initializeNavigation() {
-        document.querySelectorAll("[data-view]").forEach(button => {
-            button.addEventListener("click", () => {
-                switchView(button.dataset.view);
-            });
-        });
+        // Delegación: funciona aunque el menú se vuelva a renderizar.
+        document.addEventListener("click", event => {
+            const trigger = event.target.closest("[data-view], [data-view-target]");
+            if (!trigger) return;
 
-        document.querySelectorAll("[data-view-target]").forEach(button => {
-            button.addEventListener("click", () => {
-                switchView(button.dataset.viewTarget);
-            });
+            event.preventDefault();
+            switchView(trigger.dataset.view || trigger.dataset.viewTarget);
         });
     }
 
-    // ======================================================
-    // SIDEBAR MOBILE
-    // ======================================================
-
-    function initializeSidebar() {
-        const sidebar = getElement("sidebar");
-        const menuToggle = getElement("menuToggle");
-
-        if (!sidebar || !menuToggle) return;
-
-        let overlay = getElement("sidebarOverlay");
-
-        if (!overlay) {
-            overlay = document.createElement("div");
-            overlay.className = "sidebar-overlay";
-            overlay.id = "sidebarOverlay";
-
-            document.body.append(overlay);
-        }
-
-        menuToggle.addEventListener("click", () => {
-            const isOpen = sidebar.classList.toggle("open");
-            overlay.classList.toggle("show", isOpen);
-        });
-
-        getElement("sidebarClose")?.addEventListener("click", closeSidebar);
-        overlay.addEventListener("click", closeSidebar);
-    }
-
-    function closeSidebar() {
+        function closeSidebar() {
         getElement("sidebar")?.classList.remove("open");
         getElement("sidebarOverlay")?.classList.remove("show");
     }
@@ -1158,7 +1124,7 @@
         try {
             const allCourses = await runClassroomAudit();
 
-            // SOLO SP1-SP4.
+            // Todos los cursos activos; SP1-SP4 se identifican cuando corresponde.
             // Cursos SP5 y otros códigos quedan excluidos.
             auditResults = getEligibleCourses(allCourses);
 
@@ -1171,7 +1137,7 @@
 
             setText(
                 "connectionStatus",
-                `${auditResults.length} cursos SP1–SP4 auditados`
+                `${auditResults.length} cursos activos auditados`
             );
 
             setText(
@@ -1303,6 +1269,7 @@
         initializeSidebar();
         initializeEvents();
         updateGoogleConnectionUI(isGoogleConnected(), isGoogleConnected() ? "Google conectado" : "Sin conectar");
+        switchView(activeView);
         renderAll();
     }
 
