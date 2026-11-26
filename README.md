@@ -64,3 +64,11 @@ Desde el panel se pueden descargar:
 - Informe detallado: temas, materiales, actividades, anuncios y observaciones.
 
 Los archivos se exportan en CSV con separador `;` y codificación UTF-8 con BOM para facilitar su apertura en hojas de cálculo.
+
+## Regla de evaluación de SP5
+
+Los cursos activos se conservan en la aplicación para consulta y auditoría. Sin embargo, los cursos identificados como `SP5` se excluyen expresamente del cálculo del porcentaje de cumplimiento. El denominador, el numerador y los gráficos de cumplimiento utilizan únicamente los cursos evaluables (SP1–SP4). SP5 se muestra por separado como referencia y se identifica en los reportes como excluido del porcentaje.
+
+## Analítica visual
+
+El dashboard incluye un gráfico circular de cumplimiento y una comparación por periodo SP1–SP4. Los gráficos se generan con CSS y JavaScript nativo, sin agregar dependencias externas.

@@ -364,7 +364,7 @@
                 <i class="fa-solid fa-book-open"></i>
               </div>
 
-              <span class="metric-label">CURSOS</span>
+              <span class="metric-label">CURSOS ACTIVOS</span>
 
             </div>
 
@@ -373,7 +373,7 @@
             </div>
 
             <p class="metric-description">
-              Cursos encontrados
+              Incluye SP5 como referencia
             </p>
 
           </article>
@@ -386,7 +386,7 @@
                 <i class="fa-solid fa-circle-check"></i>
               </div>
 
-              <span class="metric-label">COMPLETADOS</span>
+              <span class="metric-label">COMPLETADOS SP1–SP4</span>
 
             </div>
 
@@ -395,7 +395,7 @@
             </div>
 
             <p class="metric-description">
-              Cursos sin pendientes
+              Cursos completos evaluables
             </p>
 
           </article>
@@ -408,7 +408,7 @@
                 <i class="fa-solid fa-clock"></i>
               </div>
 
-              <span class="metric-label">PENDIENTES</span>
+              <span class="metric-label">PENDIENTES SP1–SP4</span>
 
             </div>
 
@@ -463,6 +463,43 @@
 
           </div>
 
+        </section>
+
+        <!-- ANALÍTICA VISUAL: SP5 se informa aparte y no entra al cálculo -->
+        <section class="analytics-grid" aria-label="Gráficos de auditoría">
+          <article class="content-card analytics-card">
+            <div class="card-header">
+              <div><h2>Panorama de cumplimiento</h2><p>Porcentaje calculado únicamente con cursos evaluables.</p></div>
+              <span class="chart-kicker">SP1–SP4</span>
+            </div>
+            <div class="compliance-chart-layout">
+              <div class="compliance-donut" id="complianceDonut" role="img" aria-label="Gráfico circular de cumplimiento">
+                <div class="donut-center"><strong>0%</strong><span>Cumplimiento</span></div>
+              </div>
+              <div class="chart-legend" id="complianceLegend">
+                <div class="chart-legend-item"><span class="legend-dot legend-complete"></span><span>Completados</span><strong>0</strong></div>
+                <div class="chart-legend-item"><span class="legend-dot legend-pending"></span><span>Pendientes</span><strong>0</strong></div>
+                <div class="chart-legend-item"><span class="legend-dot legend-excluded"></span><span>SP5 fuera del cálculo</span><strong>0</strong></div>
+              </div>
+            </div>
+            <div class="chart-footnote"><i class="fa-solid fa-circle-info"></i><span>SP5 se muestra como referencia, pero no afecta el porcentaje.</span></div>
+          </article>
+          <article class="content-card analytics-card">
+            <div class="card-header">
+              <div><h2>Desempeño por periodo</h2><p>Comparación de cursos completos por SP.</p></div>
+              <span class="chart-kicker">Porcentaje</span>
+            </div>
+            <div class="semester-chart" id="semesterChart">
+              <p class="chart-empty">Sin datos para mostrar.</p>
+            </div>
+            <div class="chart-footnote"><i class="fa-solid fa-filter-circle-dollar"></i><span>Solo se consideran SP1, SP2, SP3 y SP4.</span></div>
+          </article>
+        </section>
+
+        <section class="sp5-notice" aria-live="polite">
+          <div class="sp5-notice-icon"><i class="fa-solid fa-circle-minus"></i></div>
+          <div><strong>SP5 está fuera de la evaluación porcentual</strong><p>Los cursos SP5 pueden aparecer en el listado y conservar su auditoría, pero no forman parte del denominador ni del numerador del cumplimiento.</p></div>
+          <div class="sp5-count"><strong id="excludedSP5">0</strong><span>cursos SP5</span></div>
         </section>
 
         <!-- CURSOS RECIENTES -->

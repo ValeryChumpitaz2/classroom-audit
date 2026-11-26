@@ -153,11 +153,24 @@ function getSemester(courseName = "") {
 function getSP(courseName = "") {
     const normalizedName = String(courseName).toUpperCase();
 
+    // Detectar SP5 explícitamente aunque no tenga código en semesterMap.
+    const explicitSP = normalizedName.match(/SP[\s_-]*([1-5])(?!\d)/);
+    if (explicitSP) return `SP${explicitSP[1]}`;
+
     const match = semesterMap.find(item =>
         normalizedName.includes(item.code)
     );
 
     return match?.sp || null;
+}
+
+// SP5 puede mostrarse y auditarse, pero nunca forma parte del porcentaje.
+function isExcludedFromPercentage(course) {
+    return getSP(course?.name || "") === "SP5";
+}
+
+function getPercentageCourses() {
+    return auditResults.filter(course => !isExcludedFromPercentage(course));
 }
 
 function getEligibleCourses(courses) {
@@ -512,9 +525,12 @@ function createCourseCard(course) {
     const semester = document.createElement("span");
     semester.className = "semester-tag";
 
-    semester.textContent = semesterNumber
-        ? `${sp} · ${semesterNumber}.º SEMESTRE`
-        : "SEMESTRE NO IDENTIFICADO";
+    semester.textContent = sp === "SP5"
+        ? "SP5 · FUERA DEL PORCENTAJE"
+        : semesterNumber
+            ? `${sp} · ${semesterNumber}.º SEMESTRE`
+            : "SEMESTRE NO IDENTIFICADO";
+    if (sp === "SP5") semester.classList.add("semester-tag-excluded");
 
     const name = document.createElement("div");
     name.className = "course-name";
@@ -658,10 +674,12 @@ function filterCourses(prefix = "") {
                 .includes(filters.search);
 
         const semester = getSemester(course.name);
+        const sp = getSP(course.name);
 
         const matchesSemester =
             filters.semester === "all" ||
-            String(semester) === filters.semester;
+            String(semester) === filters.semester ||
+            sp === filters.semester;
 
         const matchesStatus =
             filters.status === "all" ||
@@ -728,15 +746,13 @@ function renderCourses() {
 
 function updateDashboard() {
     const total = auditResults.length;
-
-    const completed = auditResults.filter(
-        isCourseComplete
-    ).length;
-
-    const pending = total - completed;
-
-    const percentage = total
-        ? Math.round(completed / total * 100)
+    const evaluatedCourses = getPercentageCourses();
+    const evaluatedTotal = evaluatedCourses.length;
+    const excludedSP5 = auditResults.filter(isExcludedFromPercentage).length;
+    const completed = evaluatedCourses.filter(isCourseComplete).length;
+    const pending = evaluatedTotal - completed;
+    const percentage = evaluatedTotal
+        ? Math.round((completed / evaluatedTotal) * 100)
         : 0;
 
     const values = {
@@ -745,35 +761,67 @@ function updateDashboard() {
         pending,
         progress: `${percentage}%`,
         progressNumber: `${percentage}%`,
-        progressText: `${completed} de ${total} cursos completos`
+        progressText: evaluatedTotal
+            ? `${completed} de ${evaluatedTotal} cursos evaluables completos · SP5 excluido`
+            : "Aún no hay cursos evaluables. SP5 no se considera en el porcentaje."
     };
 
-    Object.entries(values).forEach(([id, value]) => {
-        setText(id, value);
-    });
+    Object.entries(values).forEach(([id, value]) => setText(id, value));
+    setText("excludedSP5", excludedSP5);
+    setText("evaluatedTotal", evaluatedTotal);
+    setText("evaluatedLabel", `${evaluatedTotal} cursos considerados en el porcentaje`);
 
     const progressBar = getElement("progressBar");
-
     if (progressBar) {
         progressBar.style.width = `${percentage}%`;
-
-        progressBar.setAttribute(
-            "aria-valuenow",
-            String(percentage)
-        );
+        progressBar.setAttribute("aria-valuenow", String(percentage));
+        progressBar.setAttribute("aria-valuetext", `${percentage}% de cumplimiento; SP5 excluido`);
     }
+
+    renderDashboardCharts(evaluatedCourses, completed, pending, excludedSP5);
 
     const exportBtn = getElement("exportBtn");
     const exportDetailBtn = getElement("exportDetailBtn");
+    if (exportBtn) exportBtn.disabled = total === 0;
+    if (exportDetailBtn) exportDetailBtn.disabled = total === 0;
+}
 
-    if (exportBtn) {
-        exportBtn.disabled = total === 0;
+function renderDashboardCharts(evaluatedCourses, completed, pending, excludedSP5) {
+    const donut = getElement("complianceDonut");
+    const legend = getElement("complianceLegend");
+    const semesterChart = getElement("semesterChart");
+    const percentage = evaluatedCourses.length
+        ? Math.round((completed / evaluatedCourses.length) * 100)
+        : 0;
+
+    if (donut) {
+        donut.style.setProperty("--completion", `${percentage}%`);
+        donut.innerHTML = `<div class="donut-center"><strong>${percentage}%</strong><span>Cumplimiento</span></div>`;
     }
 
-    if (exportDetailBtn) {
-        exportDetailBtn.disabled = total === 0;
+    if (legend) {
+        legend.innerHTML = `
+          <div class="chart-legend-item"><span class="legend-dot legend-complete"></span><span>Completados</span><strong>${completed}</strong></div>
+          <div class="chart-legend-item"><span class="legend-dot legend-pending"></span><span>Pendientes</span><strong>${pending}</strong></div>
+          <div class="chart-legend-item"><span class="legend-dot legend-excluded"></span><span>SP5 fuera del cálculo</span><strong>${excludedSP5}</strong></div>`;
+    }
+
+    if (semesterChart) {
+        const groups = ["SP1", "SP2", "SP3", "SP4"].map(sp => {
+            const courses = evaluatedCourses.filter(course => getSP(course.name) === sp);
+            const done = courses.filter(isCourseComplete).length;
+            const rate = courses.length ? Math.round(done / courses.length * 100) : 0;
+            return { sp, count: courses.length, done, rate };
+        });
+        semesterChart.innerHTML = groups.map(group => `
+          <div class="semester-chart-row">
+            <div class="semester-chart-label"><strong>${group.sp}</strong><span>${group.done}/${group.count} completos</span></div>
+            <div class="semester-chart-track"><span style="width:${group.rate}%"></span></div>
+            <strong class="semester-chart-rate">${group.rate}%</strong>
+          </div>`).join("");
     }
 }
+
 
 // ======================================================
 // 16. HALLAZGOS
@@ -1139,6 +1187,7 @@ function exportReport() {
         "SP",
         "Semestre",
         "Estado de auditoría",
+        "Cuenta para porcentaje",
         ...requirements.map(item => item.label),
         "Topics",
         "Materiales",
@@ -1159,6 +1208,7 @@ function exportReport() {
             getSP(course.name),
             getSemester(course.name) || "",
             isCourseComplete(course) ? "Completo" : "Pendiente",
+            isExcludedFromPercentage(course) ? "No · SP5 excluido" : "Sí",
 
             ...requirements.map(item =>
                 checks[item.key] ? "Completo" : "Pendiente"
@@ -1299,8 +1349,35 @@ function exportDetailReport() {
 // 21. RENDER GENERAL
 // ======================================================
 
+function populateSemesterFilters() {
+    ["semesterFilter", "coursesSemesterFilter"].forEach(id => {
+        const select = getElement(id);
+        if (!select) return;
+        const previous = select.value || "all";
+        const available = [...new Set(auditResults.map(course => getSP(course.name)).filter(Boolean))]
+            .sort((a, b) => Number(a.replace("SP", "")) - Number(b.replace("SP", "")));
+        select.replaceChildren();
+        const all = document.createElement("option");
+        all.value = "all";
+        all.textContent = "Todos los periodos";
+        select.append(all);
+        available.forEach(sp => {
+            const option = document.createElement("option");
+            option.value = String(getSemesterForSP(sp) ?? sp);
+            option.textContent = sp === "SP5" ? "SP5 · Fuera del porcentaje" : sp;
+            select.append(option);
+        });
+        select.value = [...select.options].some(option => option.value === previous) ? previous : "all";
+    });
+}
+
+function getSemesterForSP(sp) {
+    return semesterMap.find(item => item.sp === sp)?.semester ?? sp;
+}
+
 function renderAll() {
     updateDashboard();
+    populateSemesterFilters();
     renderCourses();
     populateFindingCourseFilter();
     renderFindings();
@@ -1361,11 +1438,9 @@ async function synchronizeClassroom() {
             `${auditResults.length} cursos activos auditados`
         );
 
-        setText(
-            "lastSync",
-            "Última sincronización: " +
-            new Date().toLocaleString("es-PE")
-        );
+        const syncLabel = "Última sincronización: " + new Date().toLocaleString("es-PE");
+        setText("lastSync", syncLabel);
+        try { localStorage.setItem("classroom-audit-last-sync", syncLabel); } catch (_) {}
 
         showToast(
             `Auditoría finalizada. ${auditResults.length} cursos evaluados.`
@@ -1548,6 +1623,11 @@ function initializeApp() {
             ? "Google conectado"
             : "Sin conectar"
     );
+
+    try {
+        const previousSync = localStorage.getItem("classroom-audit-last-sync");
+        if (previousSync) setText("lastSync", previousSync);
+    } catch (_) {}
 
     renderAll();
 

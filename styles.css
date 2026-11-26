@@ -2553,3 +2553,42 @@ body.dark-mode .view-section.active {
     background: rgba(0, 0, 0, .62);
   }
 }
+
+/* =========================================================
+   ANALÍTICA VISUAL · CLASSROOM AUDIT
+   ========================================================= */
+.analytics-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;margin:24px 0}
+.analytics-card{min-width:0;overflow:hidden}
+.chart-kicker{padding:7px 11px;border-radius:999px;background:#edf4ff;color:#4779c5;font-size:.72rem;font-weight:800;letter-spacing:.06em;white-space:nowrap}
+.compliance-chart-layout{display:flex;align-items:center;justify-content:center;gap:clamp(22px,5vw,56px);padding:16px 8px 10px}
+.compliance-donut{--completion:0%;width:190px;height:190px;flex:0 0 190px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#6b9fe8 var(--completion),#edf1f7 var(--completion));position:relative}
+.compliance-donut:before{content:"";position:absolute;inset:17px;border-radius:50%;background:var(--surface,#fff)}
+.donut-center{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.donut-center strong{font-size:2.1rem;line-height:1;color:var(--text,#26364b);font-weight:800;letter-spacing:-.06em}
+.donut-center span{font-size:.76rem;color:var(--text-secondary,#7a8798);font-weight:600}
+.chart-legend{display:grid;gap:16px;min-width:180px}
+.chart-legend-item{display:grid;grid-template-columns:10px 1fr auto;align-items:center;gap:9px;color:var(--text-secondary,#738096);font-size:.82rem}
+.chart-legend-item strong{color:var(--text,#26364b);font-size:.92rem}
+.legend-dot{width:9px;height:9px;border-radius:50%;display:block}.legend-complete{background:#6b9fe8}.legend-pending{background:#f3b66c}.legend-excluded{background:#b8c1ce}
+.chart-footnote{display:flex;gap:9px;align-items:flex-start;padding:13px 14px;margin-top:14px;border-radius:12px;background:#f5f8fd;color:#718096;font-size:.76rem;line-height:1.5}.chart-footnote i{color:#7199d6;margin-top:2px}
+.semester-chart{display:grid;gap:20px;padding:18px 2px 8px}
+.semester-chart-row{display:grid;grid-template-columns:104px minmax(60px,1fr) 42px;gap:12px;align-items:center}
+.semester-chart-label{display:flex;flex-direction:column;gap:3px}.semester-chart-label strong{font-size:.85rem;color:var(--text,#26364b)}.semester-chart-label span{font-size:.7rem;color:var(--text-secondary,#8490a1)}
+.semester-chart-track{height:10px;border-radius:99px;background:#edf1f7;overflow:hidden}.semester-chart-track span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#8bb5f0,#6b9fe8);transition:width .45s ease}
+.semester-chart-rate{text-align:right;font-size:.82rem;color:var(--text,#34445a)}
+.chart-empty{color:var(--text-secondary,#8792a2);font-size:.85rem;text-align:center;padding:28px 0}
+.sp5-notice{display:flex;align-items:center;gap:15px;padding:17px 20px;margin:0 0 24px;border:1px solid #e5eaf1;border-radius:16px;background:linear-gradient(110deg,#f8fafc,#f3f6fa)}
+.sp5-notice-icon{width:42px;height:42px;display:grid;place-items:center;flex:0 0 42px;border-radius:13px;background:#e9edf2;color:#7c8999;font-size:1.05rem}
+.sp5-notice>div:nth-child(2){flex:1}.sp5-notice strong{display:block;color:#455468;font-size:.87rem}.sp5-notice p{margin:4px 0 0;color:#7d8998;font-size:.77rem;line-height:1.5}
+.sp5-count{display:flex;flex-direction:column;align-items:center;min-width:65px;padding-left:16px;border-left:1px solid #e1e7ef}.sp5-count strong{font-size:1.35rem;color:#66758a}.sp5-count span{font-size:.68rem;color:#8994a3}
+.semester-tag-excluded{background:#eef1f5!important;color:#788597!important;border:1px solid #e0e5ec}
+body.dark-mode .chart-kicker{background:#253a57;color:#a9caff}
+body.dark-mode .compliance-donut:before{background:var(--surface,#202b3b)}
+body.dark-mode .chart-footnote{background:#202d40;color:#a8b5c7}
+body.dark-mode .semester-chart-track{background:#344155}
+body.dark-mode .sp5-notice{background:#202b39;border-color:#344155}
+body.dark-mode .sp5-notice strong{color:#d5deea}
+body.dark-mode .sp5-notice p,body.dark-mode .sp5-count span{color:#a4b0c1}
+body.dark-mode .sp5-notice-icon{background:#344155;color:#c1ccda}
+@media(max-width:900px){.analytics-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.compliance-chart-layout{flex-direction:column;gap:24px}.chart-legend{width:100%;max-width:260px}.sp5-notice{align-items:flex-start;flex-wrap:wrap}.sp5-count{margin-left:57px;border-left:0;padding-left:0;align-items:flex-start}.semester-chart-row{grid-template-columns:84px minmax(50px,1fr) 38px;gap:8px}}
