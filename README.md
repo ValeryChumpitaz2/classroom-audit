@@ -41,14 +41,14 @@ Agrega `http://localhost:5500` a los orígenes autorizados de JavaScript del cli
 
 ## Alcance de auditoría
 
-Se evalúan únicamente cursos activos cuyo nombre contiene alguno de estos códigos:
+Se recuperan y auditan **todos los cursos activos** visibles para la cuenta de Google conectada. Los siguientes códigos permiten identificar el semestre de algunos cursos, pero no se utilizan para excluir otros cursos:
 
 - `ASE261_POO` — SP1, segundo semestre.
 - `ASE252_PFE` — SP2, tercer semestre.
 - `ASE251_DAM` — SP3, cuarto semestre.
 - `ASE242_SDE` — SP4, quinto semestre.
 
-Los cursos que no coincidan con esos códigos no se consultan para la auditoría de contenido.
+Los cursos sin uno de esos códigos también aparecen en el listado y en los informes; su semestre se muestra como no identificado.
 
 ## Sincronización y autorización
 

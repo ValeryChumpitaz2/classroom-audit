@@ -53,6 +53,7 @@ function setGoogleButtonState(enabled) {
   if (button) {
     button.disabled = !enabled;
   }
+  
 }
 
 function setGoogleConnectionMessage(message) {
@@ -223,16 +224,61 @@ function handleGoogleTokenResponse(response) {
 // =========================================================
 
 function handleGoogleAuthError(error) {
+  const errorType = error?.type || "";
+  const errorMessage = error?.message || "";
+
+  // El usuario cerró la ventana emergente.
+  if (
+    errorType === "popup_closed" ||
+    errorType === "popup_closed_by_user" ||
+    errorMessage.toLowerCase().includes("popup window closed")
+  ) {
+    console.info(
+      "El usuario cerró la ventana de autenticación de Google."
+    );
+
+    setGoogleConnectionMessage(
+      "Conexión cancelada. Puedes intentarlo nuevamente."
+    );
+
+    return;
+  }
+
+  // El navegador bloqueó la ventana emergente.
+  if (
+    errorType === "popup_failed_to_open" ||
+    errorType === "popup_blocked"
+  ) {
+    console.warn(
+      "El navegador bloqueó la ventana de autenticación.",
+      error
+    );
+
+    setGoogleConnectionMessage(
+      "Permite las ventanas emergentes para conectar Google."
+    );
+
+    googleAuthToast(
+      "El navegador bloqueó la ventana de Google. Permite las ventanas emergentes."
+    );
+
+    return;
+  }
+
+  // Otros errores de autenticación.
   console.error(
     "Error durante la autenticación de Google:",
     error
   );
 
-  googleAuthToast(
+  setGoogleConnectionMessage(
     "No se pudo completar la autenticación."
   );
-}
 
+  googleAuthToast(
+    "No se pudo completar la conexión con Google."
+  );
+}
 // =========================================================
 // CONECTAR GOOGLE
 // =========================================================
@@ -250,6 +296,7 @@ function connectGoogle() {
     }
   }
 
+  // Si el token todavía es válido, no es necesario abrir otra ventana.
   if (isTokenValid()) {
     window.dispatchEvent(
       new CustomEvent("google-auth-success")
@@ -258,18 +305,13 @@ function connectGoogle() {
     return;
   }
 
-  /*
-   * Si el usuario ya autorizó anteriormente la aplicación,
-   * se evita solicitar nuevamente el consentimiento.
-   *
-   * Si es la primera conexión, se solicita consentimiento.
-   */
-
   const prompt = wasGoogleAuthorized()
     ? ""
     : "consent";
 
   try {
+    setGoogleButtonState(false);
+
     tokenClient.requestAccessToken({
       prompt
     });
@@ -279,6 +321,8 @@ function connectGoogle() {
       "No se pudo solicitar el token:",
       error
     );
+
+    setGoogleButtonState(true);
 
     googleAuthToast(
       "No se pudo iniciar la conexión con Google."

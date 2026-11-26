@@ -54,13 +54,9 @@ async function getPaginatedCollection(endpoint, resultKey) {
   return results;
 }
 
-function isEligibleClassroomCourse(course) {
-  // Todos los cursos activos se conservan; los códigos conocidos solo
-  // permiten identificar el semestre, no excluir cursos.
-  return course?.courseState === "ACTIVE";
-}
-
 async function getAllCourses() {
+  // Recuperar TODOS los cursos activos visibles para la cuenta.
+  // Los códigos SP1-SP4 solo sirven para clasificar, no para excluir cursos.
   const courses = await getPaginatedCollection("/courses", "courses");
   return courses.filter(course => course?.courseState === "ACTIVE");
 }
