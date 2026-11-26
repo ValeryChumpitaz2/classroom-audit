@@ -1,639 +1,133 @@
-
 /**
- * CLASSROOM AUDIT
- * Renderizado de auditorías detalladas.
+ * Renderizado del detalle de auditoría de un curso.
+ * Devuelve un nodo DOM y no modifica el documento directamente.
  */
 
-// ======================================================
-// UTILIDADES DOM
-// ======================================================
+function buildCourseAuditDetail(course) {
+  const audit = auditCourseContent(course || {});
+  const container = document.createElement("div");
+  container.className = "audit-detail";
 
-function detailElement(tag, className, text = "") {
-  const element = document.createElement(tag);
+  const summary = document.createElement("div");
+  summary.className = "audit-detail-summary";
 
-  if (className) element.className = className;
-  if (text) element.textContent = text;
+  const metrics = [
+    ["Topics", audit.summary.totalTopics],
+    ["Materiales", audit.summary.totalMaterials],
+    ["Actividades", audit.summary.totalActivities],
+    ["Anuncios", audit.summary.totalAnnouncements],
+    ["Progreso", `${audit.summary.progress}%`]
+  ];
 
-  return element;
-}
-
-// ======================================================
-// ESTADOS
-// ======================================================
-
-function detailBadge(status) {
-  const labels = {
-    complete: "Correcto",
-    warning: "Revisar",
-    unpublished: "Sin publicar",
-    published: "Publicado",
-    deleted: "Eliminado",
-    archived: "Archivado",
-    unknown: "Desconocido",
-    info: "Informativo"
-  };
-
-  const visualStatus = status === "unpublished"
-    ? "warning"
-    : status === "published"
-      ? "complete"
-      : status === "deleted"
-        ? "missing"
-        : status === "archived"
-          ? "info"
-          : status;
-
-  return detailElement(
-    "span",
-    `audit-badge ${visualStatus || "info"}`,
-    labels[status] || "Sin evaluar"
-  );
-}
-
-// ======================================================
-// OBSERVACIONES
-// ======================================================
-
-function detailObservations(observations, type = "warning") {
-  if (!observations?.length) return null;
-
-  const list = detailElement(
-    "ul",
-    `audit-observations ${type}`
-  );
-
-  observations.forEach(message => {
-    list.append(
-      detailElement("li", "", message)
-    );
+  metrics.forEach(([label, value]) => {
+    const metric = document.createElement("div");
+    metric.className = "audit-detail-metric";
+    const strong = document.createElement("strong");
+    strong.textContent = String(value);
+    const caption = document.createElement("span");
+    caption.textContent = label;
+    metric.append(strong, caption);
+    summary.append(metric);
   });
-
-  return list;
-}
-
-// ======================================================
-// INFORMACIÓN ADICIONAL
-// ======================================================
-
-function detailInformation(information) {
-  if (!information?.length) return null;
-
-  const list = detailElement(
-    "ul",
-    "audit-information"
-  );
-
-  information.forEach(message => {
-    list.append(detailElement("li", "", message));
-  });
-
-  return list;
-}
-
-// ======================================================
-// ADJUNTOS
-// ======================================================
-
-function renderAttachments(materials = []) {
-  const container = detailElement(
-    "div",
-    "audit-attachments"
-  );
-
-  materials.forEach(material => {
-    const type = material.driveFile
-      ? "Archivo"
-      : material.youtubeVideo
-        ? "Video"
-        : material.link
-          ? "Enlace"
-          : material.form
-            ? "Formulario"
-            : "Recurso";
-
-    const label = material.driveFile?.title ||
-      material.youtubeVideo?.title ||
-      material.link?.title ||
-      material.form?.title ||
-      type;
-
-    const item = detailElement(
-      "div",
-      "audit-attachment"
-    );
-
-    item.append(
-      detailElement("span", "attachment-type", type),
-      detailElement("span", "attachment-name", label)
-    );
-
-    const url =
-      material.driveFile?.alternateLink ||
-      material.youtubeVideo?.alternateLink ||
-      material.link?.url ||
-      material.form?.url;
-
-    if (url) {
-      const link = document.createElement("a");
-
-      link.href = url;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.textContent = "Abrir ↗";
-
-      item.append(link);
-    }
-
-    container.append(item);
-  });
-
-  return container;
-}
-
-// ======================================================
-// MATERIALES
-// ======================================================
-
-function renderMaterial(material) {
-  const card = detailElement(
-    "article",
-    "audit-content-item"
-  );
-
-  const header = detailElement(
-    "div",
-    "audit-item-header"
-  );
-
-  const title = detailElement(
-    "h4",
-    "",
-    material.title
-  );
-
-  header.append(title, detailBadge(material.status));
-
-  card.append(header);
-
-  card.append(
-    detailElement(
-      "p",
-      "audit-description",
-      material.description || "Este material no tiene descripción."
-    )
-  );
-
-  card.append(
-    detailElement(
-      "div",
-      "audit-publication-info",
-      `Estado de publicación: ${material.state}`
-    )
-  );
-
-  if (material.attachments?.length) {
-    card.append(renderAttachments(material.attachments));
-  }
-
-  const observations = detailObservations(
-    material.observations
-  );
-
-  if (observations) card.append(observations);
-
-  return card;
-}
-
-// ======================================================
-// ACTIVIDADES
-// ======================================================
-
-function renderActivity(activity) {
-  const card = detailElement(
-    "article",
-    "audit-content-item"
-  );
-
-  const header = detailElement(
-    "div",
-    "audit-item-header"
-  );
-
-  header.append(
-    detailElement("h4", "", activity.title),
-    detailBadge(activity.status)
-  );
-
-  card.append(header);
-
-  card.append(
-    detailElement(
-      "p",
-      "audit-description",
-      activity.description ||
-      "Esta actividad no tiene instrucciones registradas."
-    )
-  );
-
-  const metadata = detailElement(
-    "div",
-    "audit-metadata"
-  );
-
-  metadata.append(
-    detailElement(
-      "span",
-      "audit-publication-info",
-      `Publicación: ${activity.state}`
-    )
-  );
-
-  if (activity.points !== null) {
-    metadata.append(
-      detailElement(
-        "span",
-        "audit-meta",
-        `Puntaje: ${activity.points}`
-      )
-    );
-  }
-
-  if (activity.dueDate) {
-    const date = new Date(activity.dueDate);
-
-    const formattedDate = !Number.isNaN(date.getTime())
-      ? date.toLocaleString("es-PE")
-      : activity.dueDate;
-
-    metadata.append(
-      detailElement(
-        "span",
-        "audit-meta",
-        `Entrega: ${formattedDate}`
-      )
-    );
-  }
-
-  card.append(metadata);
-
-  if (activity.attachments?.length) {
-    card.append(renderAttachments(activity.attachments));
-  }
-
-  const observations = detailObservations(
-    activity.observations
-  );
-
-  const information = detailInformation(
-    activity.information
-  );
-
-  if (observations) card.append(observations);
-  if (information) card.append(information);
-
-  return card;
-}
-
-// ======================================================
-// TOPIC
-// ======================================================
-
-function renderTopic(topic) {
-  const details = detailElement(
-    "details",
-    "audit-topic"
-  );
-
-  const summary = detailElement(
-    "summary",
-    "audit-topic-summary"
-  );
-
-  const info = detailElement(
-    "div",
-    "audit-topic-info"
-  );
-
-  info.append(
-    detailElement("h3", "", topic.name),
-    detailElement(
-      "p",
-      "",
-      `${topic.materials.length} materiales · ` +
-      `${topic.activities.length} actividades`
-    )
-  );
-
-  summary.append(
-    info,
-    detailBadge(topic.status)
-  );
-
-  details.append(summary);
-
-  const body = detailElement(
-    "div",
-    "audit-topic-body"
-  );
-
-  const observations = detailObservations(
-    topic.observations
-  );
-
-  if (observations) body.append(observations);
-
-  // Materiales
-  if (topic.materials.length) {
-    body.append(
-      detailElement(
-        "h4",
-        "audit-section-label",
-        "Materiales"
-      )
-    );
-
-    topic.materials.forEach(material => {
-      body.append(renderMaterial(material));
-    });
-  }
-
-  // Actividades
-  if (topic.activities.length) {
-    body.append(
-      detailElement(
-        "h4",
-        "audit-section-label",
-        "Actividades"
-      )
-    );
-
-    topic.activities.forEach(activity => {
-      body.append(renderActivity(activity));
-    });
-  }
-
-  if (!topic.materials.length && !topic.activities.length) {
-    body.append(
-      detailElement(
-        "p",
-        "audit-empty",
-        "Topic vacío. No contiene materiales ni actividades."
-      )
-    );
-  }
-
-  details.append(body);
-
-  return details;
-}
-
-// ======================================================
-// ELEMENTOS SIN TOPIC
-// ======================================================
-
-function renderUnorganized(title, items, type) {
-  if (!items.length) return null;
-
-  const details = detailElement(
-    "details",
-    "audit-topic unorganized-section"
-  );
-
-  details.append(
-    detailElement(
-      "summary",
-      "",
-      `${title} · ${items.length}`
-    )
-  );
-
-  const body = detailElement(
-    "div",
-    "audit-topic-body"
-  );
-
-  items.forEach(item => {
-    body.append(
-      type === "material"
-        ? renderMaterial(item)
-        : renderActivity(item)
-    );
-  });
-
-  details.append(body);
-
-  return details;
-}
-
-// ======================================================
-// ANUNCIOS
-// ======================================================
-
-function renderAnnouncement(announcement) {
-  const card = detailElement(
-    "article",
-    "audit-content-item"
-  );
-
-  card.append(
-    detailElement(
-      "h4",
-      "",
-      announcement.title
-    ),
-    detailElement(
-      "p",
-      "audit-description",
-      announcement.description
-    )
-  );
-
-  const observations = detailObservations(
-    announcement.observations
-  );
-
-  const information = detailInformation(
-    announcement.information
-  );
-
-  if (observations) card.append(observations);
-  if (information) card.append(information);
-
-  return card;
-}
-
-// ======================================================
-// VISTA DETALLADA
-// ======================================================
-
-function renderCourseAuditDetail(course) {
-  const audited = auditCourseContent(course);
-
-  const container = detailElement(
-    "section",
-    "course-audit-detail"
-  );
-
-  // RESUM
-  const summary = detailElement(
-    "div",
-    "audit-detail-summary"
-  );
-
-  summary.append(
-    detailElement(
-      "h3",
-      "",
-      "Resumen de contenidos"
-    ),
-    detailElement(
-      "p",
-      "",
-      `${audited.summary.totalTopics} Topics · ` +
-      `${audited.summary.totalMaterials} materiales · ` +
-      `${audited.summary.totalActivities} actividades · ` +
-      `${audited.summary.totalAnnouncements} anuncios`
-    ),
-    detailElement(
-      "p",
-      "audit-progress-text",
-      `Cumplimiento de contenidos: ${audited.summary.progress}%`
-    )
-  );
-
   container.append(summary);
 
-  // DESCRIPCIÓN
-  const description = detailElement(
-    "div",
-    "audit-course-description"
-  );
+  function makeSection(title, description, entries) {
+    const section = document.createElement("section");
+    section.className = "audit-detail-section";
 
-  description.append(
-    detailElement(
-      "h4",
-      "",
-      "Descripción del curso"
-    ),
-    detailBadge(audited.descriptionAudit.status),
-    detailElement(
-      "p",
-      "",
-      audited.description || "Sin descripción registrada."
-    )
-  );
+    const heading = document.createElement("h4");
+    heading.textContent = `${title} (${entries.length})`;
+    section.append(heading);
 
-  if (audited.descriptionAudit.status !== "complete") {
-    const observations = detailObservations([
-      audited.descriptionAudit.message
-    ]);
+    if (description) {
+      const intro = document.createElement("p");
+      intro.className = "audit-detail-description";
+      intro.textContent = description;
+      section.append(intro);
+    }
 
-    if (observations) description.append(observations);
+    if (!entries.length) {
+      const empty = document.createElement("p");
+      empty.className = "audit-detail-empty";
+      empty.textContent = "No se encontraron observaciones.";
+      section.append(empty);
+      return section;
+    }
+
+    const list = document.createElement("ul");
+    entries.forEach(entry => {
+      const item = document.createElement("li");
+      const titleText = entry.title || entry.name || "Elemento sin título";
+      const notes = [
+        ...auditSafeArray(entry.observations),
+        ...auditSafeArray(entry.information)
+      ];
+      item.textContent = notes.length ? `${titleText}: ${notes.join(" · ")}` : titleText;
+      list.append(item);
+    });
+    section.append(list);
+    return section;
   }
 
-  container.append(description);
+  const topicsSection = document.createElement("section");
+  topicsSection.className = "audit-detail-section";
+  const topicsHeading = document.createElement("h4");
+  topicsHeading.textContent = `Organización por Topics (${audit.topics.length})`;
+  topicsSection.append(topicsHeading);
 
-  // TOPICS
-  const topicsSection = detailElement(
-    "section",
-    "audit-topics-section"
-  );
+  if (!audit.topics.length) {
+    const empty = document.createElement("p");
+    empty.className = "audit-detail-empty";
+    empty.textContent = "Este curso no tiene Topics registrados.";
+    topicsSection.append(empty);
+  } else {
+    audit.topics.forEach(topic => {
+      const topicCard = document.createElement("article");
+      topicCard.className = "audit-topic-card";
+      const title = document.createElement("h5");
+      title.textContent = topic.name;
+      const state = document.createElement("span");
+      state.className = `audit-detail-state ${topic.status}`;
+      state.textContent = topic.status === "complete" ? "Correcto" : "Revisar";
+      const meta = document.createElement("p");
+      meta.textContent = `${topic.materials.length} materiales · ${topic.activities.length} actividades · ${topic.progress}% de elementos completos`;
+      topicCard.append(title, state, meta);
 
-  topicsSection.append(
-    detailElement(
-      "h3",
-      "audit-section-label",
-      "Topics del curso"
-    )
-  );
+      [...topic.materials, ...topic.activities].forEach(entry => {
+        const row = document.createElement("div");
+        row.className = "audit-topic-entry";
+        const name = document.createElement("strong");
+        name.textContent = entry.title;
+        const status = document.createElement("span");
+        status.textContent = entry.status === "complete" ? "Correcto" : "Revisar";
+        row.append(name, status);
 
-  if (!audited.topics.length) {
-    topicsSection.append(
-      detailElement(
-        "p",
-        "audit-empty",
-        "Este curso no tiene Topics."
-      )
-    );
+        const messages = [...entry.observations, ...entry.information];
+        if (messages.length) {
+          const notes = document.createElement("p");
+          notes.textContent = messages.join(" · ");
+          row.append(notes);
+        }
+        topicCard.append(row);
+      });
+      topicsSection.append(topicCard);
+    });
   }
-
-  audited.topics.forEach(topic => {
-    topicsSection.append(renderTopic(topic));
-  });
-
   container.append(topicsSection);
 
-  // MATERIAL SIN TOPIC
-  const unorganizedMaterials = renderUnorganized(
-    "Materiales sin Topic",
-    audited.unorganizedMaterials,
-    "material"
+  container.append(
+    makeSection("Materiales sin Topic", "Materiales que no están asociados a un Topic existente.", audit.unorganizedMaterials),
+    makeSection("Actividades sin Topic", "Actividades que no están asociadas a un Topic existente.", audit.unorganizedActivities),
+    makeSection("Anuncios", "Revisión de contenido y estado de publicación.", audit.announcements)
   );
 
-  if (unorganizedMaterials) {
-    container.append(unorganizedMaterials);
-  }
-
-  // ACTIVIDADES SIN TOPIC
-  const unorganizedActivities = renderUnorganized(
-    "Actividades sin Topic",
-    audited.unorganizedActivities,
-    "activity"
+  const observations = audit.findings.courseObservations.map(message => ({
+    title: "Información del curso",
+    observations: [message]
+  }));
+  container.append(
+    makeSection("Observaciones generales", "Aspectos generales que requieren revisión.", observations)
   );
-
-  if (unorganizedActivities) {
-    container.append(unorganizedActivities);
-  }
-
-  // ANUNCIOS
-  if (audited.announcements.length) {
-    const announcementsSection = detailElement(
-      "details",
-      "audit-topic"
-    );
-
-    announcementsSection.append(
-      detailElement(
-        "summary",
-        "",
-        `Anuncios · ${audited.announcements.length}`
-      )
-    );
-
-    const body = detailElement(
-      "div",
-      "audit-topic-body"
-    );
-
-    audited.announcements.forEach(announcement => {
-      body.append(renderAnnouncement(announcement));
-    });
-
-    announcementsSection.append(body);
-    container.append(announcementsSection);
-  }
-
-  // INFORMACIÓN GENERAL
-  if (audited.information.length) {
-    const informationSection = detailElement(
-      "details",
-      "audit-topic"
-    );
-
-    informationSection.append(
-      detailElement(
-        "summary",
-        "",
-        `Información adicional · ${audited.information.length}`
-      )
-    );
-
-    informationSection.append(
-      detailInformation(audited.information)
-    );
-
-    container.append(informationSection);
-  }
 
   return container;
 }

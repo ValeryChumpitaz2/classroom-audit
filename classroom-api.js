@@ -1,79 +1,70 @@
+/**
+ * CLASSROOM AUDIT
+ * Acceso de solo lectura a Google Classroom API v1.
+ */
 
 const CLASSROOM_API = "https://classroom.googleapis.com/v1";
 
-// ======================================================
-// REQUEST
-// ======================================================
+const CLASSROOM_ELIGIBLE_CODES = [
+  "ASE261_POO",
+  "ASE252_PFE",
+  "ASE251_DAM",
+  "ASE242_SDE"
+];
 
 async function classroomRequest(endpoint) {
+  const token = getAccessToken();
   const response = await fetch(`${CLASSROOM_API}${endpoint}`, {
+    method: "GET",
     headers: {
-      Authorization: `Bearer ${getAccessToken()}`,
+      Authorization: `Bearer ${token}`,
       Accept: "application/json"
     }
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-
-    throw new Error(
-      error.error?.message ||
-      `Error de Classroom API: ${response.status}`
-    );
+    const payload = await response.json().catch(() => ({}));
+    const message = payload?.error?.message || `Error de Classroom API: ${response.status}`;
+    if (response.status === 401) {
+      throw new Error("La autorización de Google venció. Vuelve a conectar tu cuenta.");
+    }
+    if (response.status === 403) {
+      throw new Error(`Google no concedió permiso para esta consulta: ${message}`);
+    }
+    throw new Error(message);
   }
 
+  if (response.status === 204) return {};
   return response.json();
 }
-
-// ======================================================
-// PAGINACIÓN
-// ======================================================
 
 async function getPaginatedCollection(endpoint, resultKey) {
   const results = [];
   let pageToken = "";
 
   do {
-    const params = new URLSearchParams({
-      pageSize: "100"
-    });
-
-    if (pageToken) {
-      params.set("pageToken", pageToken);
-    }
-
+    const params = new URLSearchParams({ pageSize: "100" });
+    if (pageToken) params.set("pageToken", pageToken);
     const separator = endpoint.includes("?") ? "&" : "?";
-
-    const data = await classroomRequest(
-      `${endpoint}${separator}${params}`
-    );
-
-    results.push(...(data[resultKey] || []));
-    pageToken = data.nextPageToken || "";
-
+    const data = await classroomRequest(`${endpoint}${separator}${params.toString()}`);
+    results.push(...(Array.isArray(data?.[resultKey]) ? data[resultKey] : []));
+    pageToken = data?.nextPageToken || "";
   } while (pageToken);
 
   return results;
 }
 
-// ======================================================
-// CURSOS
-// ======================================================
-
-async function getAllCourses() {
-  const courses = await getPaginatedCollection(
-    "/courses",
-    "courses"
-  );
-
-  return courses.filter(
-    course => course.courseState === "ACTIVE"
-  );
+function isEligibleClassroomCourse(course) {
+  const name = String(course?.name || "").toUpperCase();
+  return CLASSROOM_ELIGIBLE_CODES.some(code => name.includes(code));
 }
 
-// ======================================================
-// COLECCIONES DE CLASSROOM
-// ======================================================
+async function getAllCourses() {
+  const courses = await getPaginatedCollection("/courses", "courses");
+  return courses.filter(course =>
+    course?.courseState === "ACTIVE" && isEligibleClassroomCourse(course)
+  );
+}
 
 async function getCourseCollection(courseId, collection) {
   const validCollections = {
@@ -84,28 +75,14 @@ async function getCourseCollection(courseId, collection) {
   };
 
   const resultKey = validCollections[collection];
+  if (!resultKey) throw new Error(`Colección no válida: ${collection}`);
 
-  if (!resultKey) {
-    throw new Error("Colección no válida.");
-  }
-
-  const endpoint =
-    `/courses/${encodeURIComponent(courseId)}/${collection}`;
-
+  const endpoint = `/courses/${encodeURIComponent(courseId)}/${collection}`;
   return getPaginatedCollection(endpoint, resultKey);
 }
 
-// ======================================================
-// AUDITORÍA DEL CURSO
-// ======================================================
-
 async function auditGoogleCourse(course) {
-  const [
-    topics,
-    materials,
-    activities,
-    announcements
-  ] = await Promise.all([
+  const [topics, materials, activities, announcements] = await Promise.all([
     getCourseCollection(course.id, "topics"),
     getCourseCollection(course.id, "courseWorkMaterials"),
     getCourseCollection(course.id, "courseWork"),
@@ -117,15 +94,13 @@ async function auditGoogleCourse(course) {
     name: course.name || "Curso sin nombre",
     section: course.section || "",
     description: course.description || "",
-    courseState: course.courseState,
-
+    courseState: course.courseState || "",
     topics,
     materials,
     activities,
     announcements,
-
     checks: {
-      description: Boolean(course.description?.trim()),
+      description: Boolean(String(course.description || "").trim()),
       topics: topics.length > 0,
       materials: materials.length > 0,
       activities: activities.length > 0,
@@ -134,18 +109,28 @@ async function auditGoogleCourse(course) {
   };
 }
 
-// ======================================================
-// AUDITORÍA GENERAL
-// ======================================================
+async function runWithConcurrency(items, limit, worker) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+
+  async function runWorker() {
+    while (true) {
+      const index = nextIndex++;
+      if (index >= items.length) return;
+      results[index] = await worker(items[index]);
+    }
+  }
+
+  const workers = Array.from(
+    { length: Math.min(Math.max(1, limit), items.length) },
+    () => runWorker()
+  );
+
+  await Promise.all(workers);
+  return results;
+}
 
 async function runClassroomAudit() {
   const courses = await getAllCourses();
-
-  const results = [];
-
-  for (const course of courses) {
-    results.push(await auditGoogleCourse(course));
-  }
-
-  return results;
+  return runWithConcurrency(courses, 3, auditGoogleCourse);
 }

@@ -64,17 +64,28 @@ function setGoogleConnectionMessage(message) {
 }
 
 function wasGoogleAuthorized() {
-  return localStorage.getItem(GOOGLE_AUTHORIZED_KEY) === "true";
+  try {
+    return localStorage.getItem(GOOGLE_AUTHORIZED_KEY) === "true";
+  } catch (error) {
+    return false;
+  }
 }
 
 function rememberGoogleAuthorization() {
-  // Solo se guarda un indicador de autorización.
-  // Nunca se almacena el Access Token.
-  localStorage.setItem(GOOGLE_AUTHORIZED_KEY, "true");
+  // Solo se guarda un indicador; nunca se almacena el Access Token.
+  try {
+    localStorage.setItem(GOOGLE_AUTHORIZED_KEY, "true");
+  } catch (error) {
+    console.warn("El navegador no permitió guardar la preferencia OAuth.");
+  }
 }
 
 function clearGoogleAuthorization() {
-  localStorage.removeItem(GOOGLE_AUTHORIZED_KEY);
+  try {
+    localStorage.removeItem(GOOGLE_AUTHORIZED_KEY);
+  } catch (error) {
+    console.warn("No se pudo limpiar la preferencia OAuth.");
+  }
 }
 
 function isTokenValid() {
