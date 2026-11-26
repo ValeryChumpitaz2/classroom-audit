@@ -1,0 +1,163 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#10111a">
+  <meta name="description" content="Panel personal de auditoría de Google Classroom">
+  <title>Classroom Audit</title>
+  <link rel="stylesheet" href="styles.css">
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+
+<body>
+  <main class="container">
+
+    <header class="header">
+      <div>
+        <span class="eyebrow">PERSONAL WORKSPACE</span>
+        <h1>Classroom <span>Audit.</span></h1>
+        <p>Control inteligente de tus cursos académicos.</p>
+      </div>
+
+      <div class="logo">
+        <span>CA</span>
+      </div>
+    </header>
+
+    <section class="connection-panel">
+      <div class="connection-info">
+        <div class="google-icon">G</div>
+        <div>
+          <strong>Google Classroom</strong>
+          <p id="connectionStatus">Cuenta no conectada</p>
+        </div>
+      </div>
+
+      <div class="connection-actions">
+        <button id="connectGoogleBtn" class="btn-primary">
+          Conectar con Google
+        </button>
+        <button id="syncBtn" class="btn-secondary" disabled>
+          <span>↻</span> Sincronizar
+        </button>
+        <button id="disconnectBtn" class="btn-secondary" hidden>
+          Desconectar
+        </button>
+      </div>
+    </section>
+
+    <section class="summary">
+      <article class="summary-card">
+        <div class="summary-icon purple">▤</div>
+        <span>Cursos encontrados</span>
+        <strong id="total">0</strong>
+      </article>
+
+      <article class="summary-card">
+        <div class="summary-icon green">✓</div>
+        <span>Cursos completos</span>
+        <strong id="completed">0</strong>
+      </article>
+
+      <article class="summary-card">
+        <div class="summary-icon orange">◷</div>
+        <span>Cursos pendientes</span>
+        <strong id="pending">0</strong>
+      </article>
+
+      <article class="summary-card">
+        <div class="summary-icon blue">%</div>
+        <span>Progreso general</span>
+        <strong id="progress">0%</strong>
+      </article>
+    </section>
+
+    <section class="progress-section">
+      <div class="section-title">
+        <div>
+          <h2>Progreso de auditoría</h2>
+          <p id="progressText">Esperando sincronización</p>
+        </div>
+        <span class="progress-number" id="progressNumber">0%</span>
+      </div>
+
+      <div class="progress-track">
+        <div id="progressBar"></div>
+      </div>
+    </section>
+
+    <section class="courses-section">
+
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">GESTIÓN ACADÉMICA</span>
+          <h2>Mis Classroom</h2>
+          <p>Revisa los requisitos de cada curso.</p>
+        </div>
+
+        <span id="lastSync" class="last-sync">
+          Sin sincronizar
+        </span>
+      </div>
+
+      <div class="toolbar">
+        <input
+          type="search"
+          id="searchInput"
+          placeholder="Buscar por código o nombre..."
+        >
+
+        <select id="statusFilter">
+          <option value="all">Todos los cursos</option>
+          <option value="pending">Pendientes</option>
+          <option value="complete">Completos</option>
+        </select>
+
+        <select id="semesterFilter">
+          <option value="all">Todos los semestres</option>
+          <option value="2">2.º semestre</option>
+          <option value="3">3.º semestre</option>
+          <option value="4">4.º semestre</option>
+          <option value="5">5.º semestre</option>
+          <option value="6">6.º semestre</option>
+        </select>
+      </div>
+
+      <div id="courseList" class="course-list">
+        <div class="empty-state">
+          <div class="empty-icon">◎</div>
+          <h3>Conecta tu Google Classroom</h3>
+          <p>Sincroniza tus cursos para comenzar la auditoría.</p>
+        </div>
+      </div>
+
+    </section>
+
+    <section class="report-section">
+      <div>
+        <h2>Informe de auditoría</h2>
+        <p>Descarga el resultado de la revisión de tus cursos.</p>
+      </div>
+
+      <button id="exportBtn" class="btn-secondary" disabled>
+        ↓ Exportar CSV
+      </button>
+    </section>
+
+    <footer>
+      <span>CLASSROOM AUDIT · PERSONAL EDITION</span>
+      <span>Guardado localmente en tu navegador</span>
+    </footer>
+
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="google-auth.js"></script>
+  <script src="classroom-api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
