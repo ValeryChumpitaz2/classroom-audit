@@ -227,7 +227,48 @@ function createCourseCard(course) {
 
   card.append(header, checklist, details);
 
-  return card;
+  // ======================================================
+// DETALLE DE AUDITORÍA DEL CURSO
+// ======================================================
+
+const detailButton = document.createElement("button");
+
+detailButton.className = "btn-audit-detail";
+detailButton.textContent = "Ver auditoría detallada";
+
+const detailContainer = document.createElement("div");
+
+detailContainer.className = "course-detail-container";
+detailContainer.hidden = true;
+
+detailButton.addEventListener("click", () => {
+  const isVisible = !detailContainer.hidden;
+
+  detailContainer.hidden = isVisible;
+
+  detailButton.textContent = isVisible
+    ? "Ver auditoría detallada"
+    : "Ocultar auditoría";
+
+  // Generar el detalle solo cuando se abre por primera vez.
+  if (!detailContainer.dataset.loaded) {
+    detailContainer.append(
+      renderCourseAuditDetail(course)
+    );
+
+    detailContainer.dataset.loaded = "true";
+  }
+});
+
+card.append(
+  header,
+  checklist,
+  details,
+  detailButton,
+  detailContainer
+);
+
+return card;
 }
 
 function renderCourses() {

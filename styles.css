@@ -600,3 +600,234 @@ footer {
     flex-direction: column;
   }
 }
+
+/* ======================================================
+   COURSE AUDIT DETAIL
+====================================================== */
+
+.btn-audit-detail {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px 16px;
+
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  border-radius: 12px;
+
+  background: rgba(139, 92, 246, 0.08);
+  color: #a78bfa;
+
+  font-weight: 600;
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.btn-audit-detail:hover {
+  background: rgba(139, 92, 246, 0.16);
+  transform: translateY(-1px);
+}
+
+.course-detail-container {
+  margin-top: 18px;
+}
+
+.course-detail-container[hidden] {
+  display: none;
+}
+
+.course-audit-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Resumen */
+
+.audit-detail-summary,
+.audit-course-description {
+  padding: 16px;
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: 14px;
+  background: var(--surface, rgba(255,255,255,0.03));
+}
+
+.audit-detail-summary h3,
+.audit-course-description h4 {
+  margin-top: 0;
+}
+
+.audit-progress-text {
+  font-weight: 600;
+  color: #a78bfa;
+}
+
+/* Topics */
+
+.audit-topic {
+  margin-top: 12px;
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.audit-topic summary {
+  padding: 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.audit-topic summary::-webkit-details-marker {
+  display: none;
+}
+
+.audit-topic summary:hover {
+  background: rgba(255,255,255,0.03);
+}
+
+.audit-topic-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.audit-topic-info h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.audit-topic-info p {
+  margin: 6px 0 0;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.audit-topic-body {
+  padding: 0 16px 16px;
+}
+
+.audit-section-label {
+  margin-top: 20px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}
+
+/* Materiales y actividades */
+
+.audit-content-item {
+  margin-top: 10px;
+  padding: 14px;
+
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: 12px;
+}
+
+.audit-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.audit-item-header h4 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.audit-description {
+  margin: 12px 0;
+  font-size: 13px;
+  line-height: 1.7;
+  opacity: 0.85;
+  white-space: pre-wrap;
+}
+
+.audit-meta {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* Estados */
+
+.audit-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+
+  padding: 5px 9px;
+  border-radius: 999px;
+
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.audit-badge.complete {
+  color: #34d399;
+  background: rgba(16,185,129,0.12);
+}
+
+.audit-badge.warning {
+  color: #fbbf24;
+  background: rgba(245,158,11,0.12);
+}
+
+.audit-badge.missing {
+  color: #f87171;
+  background: rgba(239,68,68,0.12);
+}
+
+.audit-badge.info {
+  color: #60a5fa;
+  background: rgba(59,130,246,0.12);
+}
+
+/* Observaciones */
+
+.audit-observations {
+  margin: 12px 0 0;
+  padding-left: 18px;
+}
+
+.audit-observations li {
+  margin-top: 6px;
+  color: #fbbf24;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.audit-empty {
+  padding: 12px;
+  opacity: 0.7;
+  font-size: 13px;
+}
+
+/* Elementos sin Topic */
+
+.unorganized-section {
+  border-color: rgba(245,158,11,0.3);
+}
+
+/* Responsive */
+
+@media (max-width: 600px) {
+  .audit-topic-summary,
+  .audit-item-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .audit-topic-body {
+    padding: 0 12px 12px;
+  }
+
+  .audit-content-item {
+    padding: 12px;
+  }
+}

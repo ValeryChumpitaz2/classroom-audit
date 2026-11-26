@@ -141,3 +141,80 @@ async function runClassroomAudit() {
 
   return results;
 }
+
+// ======================================================
+// ORGANIZAR CONTENIDO DEL CURSO POR TOPIC
+// ======================================================
+
+function organizeCourseContent(audit) {
+  const topics = audit.topics.map(topic => {
+    const topicId = topic.topicId;
+
+    const materials = audit.materials.filter(
+      material => material.topicId === topicId
+    );
+
+    const activities = audit.activities.filter(
+      activity => activity.topicId === topicId
+    );
+
+    return {
+      ...topic,
+      materials,
+      activities,
+
+      checks: {
+        hasMaterials: materials.length > 0,
+        hasActivities: activities.length > 0,
+        materialsWithDescription: materials.filter(
+          material => material.description?.trim()
+        ).length,
+        activitiesWithDescription: activities.filter(
+          activity => activity.description?.trim()
+        ).length
+      }
+    };
+  });
+
+  // Materiales sin Topic asignado
+  const unorganizedMaterials = audit.materials.filter(
+    material => !material.topicId
+  );
+
+  // Actividades sin Topic asignado
+  const unorganizedActivities = audit.activities.filter(
+    activity => !activity.topicId
+  );
+
+  // Topics que no contienen materiales ni actividades
+  const emptyTopics = topics.filter(
+    topic =>
+      topic.materials.length === 0 &&
+      topic.activities.length === 0
+  );
+
+  return {
+    topics,
+    unorganizedMaterials,
+    unorganizedActivities,
+    emptyTopics,
+
+    summary: {
+      totalTopics: topics.length,
+      totalMaterials: audit.materials.length,
+      totalActivities: audit.activities.length,
+
+      materialsWithoutDescription: audit.materials.filter(
+        material => !material.description?.trim()
+      ).length,
+
+      activitiesWithoutDescription: audit.activities.filter(
+        activity => !activity.description?.trim()
+      ).length,
+
+      unorganizedMaterials: unorganizedMaterials.length,
+      unorganizedActivities: unorganizedActivities.length,
+      emptyTopics: emptyTopics.length
+    }
+  };
+}
