@@ -4,162 +4,832 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#10111a">
-  <meta name="description" content="Panel personal de auditoría de Google Classroom">
+
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Auditoría inteligente de cursos de Google Classroom">
+
   <title>Classroom Audit</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+
   <link rel="stylesheet" href="styles.css">
 
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
 <body>
-  <main class="container">
 
-    <header class="header">
-      <div>
-        <span class="eyebrow">PERSONAL WORKSPACE</span>
-        <h1>Classroom <span>Audit.</span></h1>
-        <p>Control inteligente de tus cursos académicos.</p>
-      </div>
+  <div class="app-shell">
 
-      <div class="logo">
-        <span>CA</span>
-      </div>
-    </header>
+    <!-- ==============================================
+         SIDEBAR
+    =============================================== -->
 
-    <section class="connection-panel">
-      <div class="connection-info">
-        <div class="google-icon">G</div>
-        <div>
-          <strong>Google Classroom</strong>
-          <p id="connectionStatus">Cuenta no conectada</p>
+    <aside class="sidebar" id="sidebar">
+
+      <div class="brand">
+        <div class="brand-mark">
+          <span>A</span>
+        </div>
+
+        <div class="brand-info">
+          <strong>Classroom Audit</strong>
+          <span>Academic workspace</span>
         </div>
       </div>
 
-      <div class="connection-actions">
-        <button id="connectGoogleBtn" class="btn-primary">
-          Conectar con Google
-        </button>
-        <button id="syncBtn" class="btn-secondary" disabled>
-          <span>↻</span> Sincronizar
-        </button>
-        <button id="disconnectBtn" class="btn-secondary" hidden>
-          Desconectar
-        </button>
-      </div>
-    </section>
-
-    <section class="summary">
-      <article class="summary-card">
-        <div class="summary-icon purple">▤</div>
-        <span>Cursos encontrados</span>
-        <strong id="total">0</strong>
-      </article>
-
-      <article class="summary-card">
-        <div class="summary-icon green">✓</div>
-        <span>Cursos completos</span>
-        <strong id="completed">0</strong>
-      </article>
-
-      <article class="summary-card">
-        <div class="summary-icon orange">◷</div>
-        <span>Cursos pendientes</span>
-        <strong id="pending">0</strong>
-      </article>
-
-      <article class="summary-card">
-        <div class="summary-icon blue">%</div>
-        <span>Progreso general</span>
-        <strong id="progress">0%</strong>
-      </article>
-    </section>
-
-    <section class="progress-section">
-      <div class="section-title">
-        <div>
-          <h2>Progreso de auditoría</h2>
-          <p id="progressText">Esperando sincronización</p>
-        </div>
-        <span class="progress-number" id="progressNumber">0%</span>
+      <div class="sidebar-label">
+        WORKSPACE
       </div>
 
-      <div class="progress-track">
-        <div id="progressBar"></div>
-      </div>
-    </section>
+      <nav class="navigation">
 
-    <section class="courses-section">
-
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">GESTIÓN ACADÉMICA</span>
-          <h2>Mis Classroom</h2>
-          <p>Revisa los requisitos de cada curso.</p>
-        </div>
-
-        <span id="lastSync" class="last-sync">
-          Sin sincronizar
-        </span>
-      </div>
-
-      <div class="toolbar">
-        <input
-          type="search"
-          id="searchInput"
-          placeholder="Buscar por código o nombre..."
+        <button
+          class="nav-item active"
+          data-view="overview"
+          type="button"
         >
+          <span class="nav-icon">◫</span>
+          <span>Overview</span>
+        </button>
 
-        <select id="statusFilter">
-          <option value="all">Todos los cursos</option>
-          <option value="pending">Pendientes</option>
-          <option value="complete">Completos</option>
-        </select>
+        <button
+          class="nav-item"
+          data-view="courses"
+          type="button"
+        >
+          <span class="nav-icon">▤</span>
+          <span>Cursos</span>
+        </button>
 
-        <select id="semesterFilter">
-          <option value="all">Todos los semestres</option>
-          <option value="2">2.º semestre</option>
-          <option value="3">3.º semestre</option>
-          <option value="4">4.º semestre</option>
-          <option value="5">5.º semestre</option>
-          <option value="6">6.º semestre</option>
-        </select>
+        <button
+          class="nav-item"
+          data-view="findings"
+          type="button"
+        >
+          <span class="nav-icon">⌕</span>
+          <span>Hallazgos</span>
+          <span class="nav-counter" id="findingsBadge">0</span>
+        </button>
+
+        <button
+          class="nav-item"
+          data-view="reports"
+          type="button"
+        >
+          <span class="nav-icon">▧</span>
+          <span>Reportes</span>
+        </button>
+
+      </nav>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-label">
+        PREFERENCIAS
       </div>
 
-      <div id="courseList" class="course-list">
-        <div class="empty-state">
-          <div class="empty-icon">◎</div>
-          <h3>Conecta tu Google Classroom</h3>
-          <p>Sincroniza tus cursos para comenzar la auditoría.</p>
-        </div>
-      </div>
-
-    </section>
-
-    <section class="report-section">
-      <div>
-        <h2>Informe de auditoría</h2>
-        <p>Descarga el resultado de la revisión de tus cursos.</p>
-      </div>
-
-      <button id="exportBtn" class="btn-secondary" disabled>
-        ↓ Exportar CSV
+      <button
+        class="nav-item"
+        id="themeToggle"
+        type="button"
+      >
+        <span class="nav-icon" id="themeIcon">◐</span>
+        <span id="themeLabel">Cambiar apariencia</span>
       </button>
-    </section>
 
-    <footer>
-      <span>CLASSROOM AUDIT · PERSONAL EDITION</span>
-      <span>Guardado localmente en tu navegador</span>
-    </footer>
+      <div class="sidebar-bottom">
 
-  </main>
+        <div class="sidebar-note">
+          <div class="note-icon">✳</div>
 
-  <div id="toast" class="toast"></div>
+          <div>
+            <strong>Audit workspace</strong>
+            <p>Organización y control académico.</p>
+          </div>
+        </div>
 
- <script src="google-auth.js"></script>
-<script src="classroom-api.js"></script>
-<script src="audit-engine.js"></script>
-<script src="course-detail.js"></script>
-<script src="app.js"></script>
+        <div class="sidebar-footer">
+          <span class="status-dot"></span>
+          <span>Personal edition</span>
+          <span class="version">v1.0</span>
+        </div>
+
+      </div>
+
+    </aside>
+
+    <!-- ==============================================
+         MAIN
+    =============================================== -->
+
+    <main class="main-content">
+
+      <!-- TOPBAR -->
+
+      <header class="topbar">
+
+        <div class="topbar-left">
+
+          <button
+            id="menuToggle"
+            class="icon-button menu-toggle"
+            type="button"
+            aria-label="Abrir menú"
+          >
+            ☰
+          </button>
+
+          <div class="breadcrumb">
+            <span>Workspace</span>
+            <span class="breadcrumb-separator">/</span>
+            <strong id="breadcrumbCurrent">Overview</strong>
+          </div>
+
+        </div>
+
+        <div class="topbar-right">
+
+          <div class="connection-indicator" id="connectionIndicator">
+            <span class="status-dot disconnected"></span>
+            <span id="connectionStatus">Sin conexión</span>
+          </div>
+
+          <button
+            class="avatar"
+            type="button"
+            aria-label="Classroom Audit"
+          >
+            V
+          </button>
+
+        </div>
+
+      </header>
+
+      <!-- ==============================================
+           OVERVIEW
+      =============================================== -->
+
+      <section class="view active" id="overviewView">
+
+        <div class="page-heading">
+
+          <div>
+
+            <span class="page-eyebrow">
+              PERSONAL WORKSPACE
+            </span>
+
+            <h1>
+              Auditoría <span class="heading-muted">académica.</span>
+            </h1>
+
+            <p>
+              Revisa, organiza y supervisa la estructura de tus cursos.
+            </p>
+
+          </div>
+
+          <div class="page-actions">
+
+            <button
+              class="button button-secondary"
+              id="connectGoogleBtn"
+              type="button"
+            >
+              <span class="google-g">G</span>
+              Conectar Google
+            </button>
+
+            <button
+              class="button button-primary"
+              id="syncBtn"
+              type="button"
+              disabled
+            >
+              <span class="button-icon">↻</span>
+              Sincronizar
+            </button>
+
+          </div>
+
+        </div>
+
+        <!-- CONNECTION CARD -->
+
+        <section class="connection-card">
+
+          <div class="connection-card-main">
+
+            <div class="connection-logo">
+              <span class="google-g">G</span>
+            </div>
+
+            <div class="connection-card-info">
+
+              <span class="card-label">
+                INTEGRACIÓN
+              </span>
+
+              <h3>Google Classroom</h3>
+
+              <p id="googleAccountInfo">
+                Conecta tu cuenta para analizar tus cursos.
+              </p>
+
+            </div>
+
+          </div>
+
+          <div class="connection-card-actions">
+
+            <span class="connection-status-label" id="googleConnectionLabel">
+              <span class="status-dot disconnected"></span>
+              No conectado
+            </span>
+
+            <button
+              class="button button-ghost"
+              id="disconnectBtn"
+              type="button"
+              hidden
+            >
+              Desconectar
+            </button>
+
+          </div>
+
+        </section>
+
+        <!-- METRICS -->
+
+        <section class="metrics-grid">
+
+          <article class="metric-card">
+
+            <div class="metric-top">
+              <span class="metric-label">Cursos auditados</span>
+              <span class="metric-symbol">▤</span>
+            </div>
+
+            <strong class="metric-value" id="total">0</strong>
+
+            <p class="metric-description">
+              Cursos incluidos en la evaluación
+            </p>
+
+          </article>
+
+          <article class="metric-card">
+
+            <div class="metric-top">
+              <span class="metric-label">Cursos completos</span>
+              <span class="metric-symbol">✓</span>
+            </div>
+
+            <strong class="metric-value" id="completed">0</strong>
+
+            <p class="metric-description">
+              Cumplen los criterios de auditoría
+            </p>
+
+          </article>
+
+          <article class="metric-card">
+
+            <div class="metric-top">
+              <span class="metric-label">Pendientes</span>
+              <span class="metric-symbol">!</span>
+            </div>
+
+            <strong class="metric-value" id="pending">0</strong>
+
+            <p class="metric-description">
+              Cursos que requieren revisión
+            </p>
+
+          </article>
+
+          <article class="metric-card metric-card-dark">
+
+            <div class="metric-top">
+              <span class="metric-label">Cumplimiento general</span>
+              <span class="metric-symbol">↗</span>
+            </div>
+
+            <strong class="metric-value" id="progress">0%</strong>
+
+            <p class="metric-description">
+              Progreso de la auditoría
+            </p>
+
+          </article>
+
+        </section>
+
+        <!-- AUDIT PROGRESS -->
+
+        <section class="panel progress-panel">
+
+          <div class="panel-heading">
+
+            <div>
+
+              <span class="section-eyebrow">
+                AUDIT OVERVIEW
+              </span>
+
+              <h2>Estado de la auditoría</h2>
+
+              <p id="progressText">
+                Esperando sincronización de cursos.
+              </p>
+
+            </div>
+
+            <div class="progress-total" id="progressNumber">
+              0%
+            </div>
+
+          </div>
+
+          <div class="progress-track">
+            <div class="progress-fill" id="progressBar"></div>
+          </div>
+
+          <div class="progress-footer">
+
+            <span>
+              <span class="legend-dot black"></span>
+              Cursos completos
+            </span>
+
+            <span>
+              <span class="legend-dot gray"></span>
+              Pendientes de revisión
+            </span>
+
+          </div>
+
+        </section>
+
+        <!-- COURSE SECTION -->
+
+        <section class="panel courses-panel">
+
+          <div class="panel-heading">
+
+            <div>
+
+              <span class="section-eyebrow">
+                COURSE MANAGEMENT
+              </span>
+
+              <h2>Mis cursos</h2>
+
+              <p>
+                Revisa el cumplimiento y la estructura de tus cursos.
+              </p>
+
+            </div>
+
+            <div class="panel-heading-actions">
+
+              <span class="last-sync" id="lastSync">
+                Sin sincronizar
+              </span>
+
+              <button
+                class="button button-secondary button-small"
+                data-view-target="courses"
+                type="button"
+              >
+                Ver todos
+                <span>→</span>
+              </button>
+
+            </div>
+
+          </div>
+
+          <!-- SEARCH -->
+
+          <div class="toolbar">
+
+            <div class="search-box">
+
+              <span class="search-icon">⌕</span>
+
+              <input
+                type="search"
+                id="searchInput"
+                placeholder="Buscar curso, código o nombre..."
+                autocomplete="off"
+              >
+
+              <span class="search-shortcut">⌘ K</span>
+
+            </div>
+
+            <select id="statusFilter" class="filter-select">
+              <option value="all">Todos los estados</option>
+              <option value="pending">Pendientes</option>
+              <option value="complete">Completos</option>
+            </select>
+
+            <select id="semesterFilter" class="filter-select">
+              <option value="all">Todos los semestres</option>
+              <option value="2">SP1 · 2.º semestre</option>
+              <option value="3">SP2 · 3.º semestre</option>
+              <option value="4">SP3 · 4.º semestre</option>
+              <option value="5">SP4 · 5.º semestre</option>
+            </select>
+
+          </div>
+
+          <!-- COURSE LIST -->
+
+          <div class="course-list" id="courseList">
+
+            <div class="empty-state">
+
+              <div class="empty-state-icon">
+                ▤
+              </div>
+
+              <h3>Tu workspace está listo</h3>
+
+              <p>
+                Conecta Google Classroom para comenzar a revisar
+                la estructura y el contenido de tus cursos.
+              </p>
+
+              <button
+                class="button button-primary"
+                type="button"
+                id="emptyConnectBtn"
+              >
+                Conectar cuenta
+              </button>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- FINDINGS PREVIEW -->
+
+        <section class="panel findings-preview">
+
+          <div class="panel-heading">
+
+            <div>
+
+              <span class="section-eyebrow">
+                AUDIT FINDINGS
+              </span>
+
+              <h2>Hallazgos recientes</h2>
+
+              <p>
+                Elementos que necesitan atención.
+              </p>
+
+            </div>
+
+            <button
+              class="button button-secondary button-small"
+              data-view-target="findings"
+              type="button"
+            >
+              Ver hallazgos
+              <span>→</span>
+            </button>
+
+          </div>
+
+          <div id="recentFindings" class="findings-list">
+
+            <div class="empty-inline">
+              Sin hallazgos disponibles.
+            </div>
+
+          </div>
+
+        </section>
+
+      </section>
+
+      <!-- ==============================================
+           COURSES VIEW
+      =============================================== -->
+
+      <section class="view" id="coursesView">
+
+        <div class="page-heading">
+
+          <div>
+
+            <span class="page-eyebrow">
+              COURSE MANAGEMENT
+            </span>
+
+            <h1>
+              Cursos <span class="heading-muted">académicos.</span>
+            </h1>
+
+            <p>
+              Consulta y audita los cursos de Google Classroom.
+            </p>
+
+          </div>
+
+          <div class="page-actions">
+
+            <button
+              class="button button-primary"
+              id="coursesSyncBtn"
+              type="button"
+            >
+              ↻ Sincronizar cursos
+            </button>
+
+          </div>
+
+        </div>
+
+        <section class="panel">
+
+          <div class="toolbar">
+
+            <div class="search-box">
+
+              <span class="search-icon">⌕</span>
+
+              <input
+                type="search"
+                id="coursesSearchInput"
+                placeholder="Buscar curso..."
+              >
+
+            </div>
+
+            <select id="coursesStatusFilter" class="filter-select">
+              <option value="all">Todos los estados</option>
+              <option value="pending">Pendientes</option>
+              <option value="complete">Completos</option>
+            </select>
+
+            <select id="coursesSemesterFilter" class="filter-select">
+              <option value="all">Todos los semestres</option>
+              <option value="2">SP1 · 2.º semestre</option>
+              <option value="3">SP2 · 3.º semestre</option>
+              <option value="4">SP3 · 4.º semestre</option>
+              <option value="5">SP4 · 5.º semestre</option>
+            </select>
+
+          </div>
+
+          <div id="allCoursesList" class="course-list">
+
+            <div class="empty-inline">
+              Sin cursos sincronizados.
+            </div>
+
+          </div>
+
+        </section>
+
+      </section>
+
+      <!-- ==============================================
+           FINDINGS VIEW
+      =============================================== -->
+
+      <section class="view" id="findingsView">
+
+        <div class="page-heading">
+
+          <div>
+
+            <span class="page-eyebrow">
+              QUALITY CONTROL
+            </span>
+
+            <h1>
+              Hallazgos <span class="heading-muted">de auditoría.</span>
+            </h1>
+
+            <p>
+              Elementos incompletos, pendientes de publicación
+              o que requieren revisión.
+            </p>
+
+          </div>
+
+        </div>
+
+        <section class="findings-summary-grid">
+
+          <article class="finding-summary-card">
+            <span>Total de hallazgos</span>
+            <strong id="totalFindings">0</strong>
+          </article>
+
+          <article class="finding-summary-card">
+            <span>Pendientes de publicación</span>
+            <strong id="unpublishedCount">0</strong>
+          </article>
+
+          <article class="finding-summary-card">
+            <span>Contenido incompleto</span>
+            <strong id="incompleteCount">0</strong>
+          </article>
+
+          <article class="finding-summary-card">
+            <span>Sin organización</span>
+            <strong id="unorganizedCount">0</strong>
+          </article>
+
+        </section>
+
+        <section class="panel">
+
+          <div class="panel-heading">
+
+            <div>
+
+              <span class="section-eyebrow">
+                REVIEW CENTER
+              </span>
+
+              <h2>Detalle de hallazgos</h2>
+
+              <p>
+                Revisa cada elemento detectado por el sistema.
+              </p>
+
+            </div>
+
+          </div>
+
+          <div class="findings-toolbar">
+
+            <select id="findingTypeFilter" class="filter-select">
+              <option value="all">Todos los hallazgos</option>
+              <option value="unpublished">Pendientes de publicación</option>
+              <option value="incomplete">Contenido incompleto</option>
+              <option value="unorganized">Sin Topic</option>
+            </select>
+
+            <select id="findingCourseFilter" class="filter-select">
+              <option value="all">Todos los cursos</option>
+            </select>
+
+          </div>
+
+          <div id="findingsList" class="findings-list">
+
+            <div class="empty-inline">
+              No hay hallazgos para mostrar.
+            </div>
+
+          </div>
+
+        </section>
+
+      </section>
+
+      <!-- ==============================================
+           REPORTS VIEW
+      =============================================== -->
+
+      <section class="view" id="reportsView">
+
+        <div class="page-heading">
+
+          <div>
+
+            <span class="page-eyebrow">
+              EXPORT & REPORTS
+            </span>
+
+            <h1>
+              Reportes <span class="heading-muted">académicos.</span>
+            </h1>
+
+            <p>
+              Genera reportes de los resultados obtenidos
+              durante la auditoría.
+            </p>
+
+          </div>
+
+        </div>
+
+        <section class="panel report-panel">
+
+          <div class="report-card">
+
+            <div class="report-icon">
+              ↗
+            </div>
+
+            <div class="report-content">
+
+              <h3>Reporte general</h3>
+
+              <p>
+                Resumen del estado de los cursos, porcentaje
+                de cumplimiento y requisitos evaluados.
+              </p>
+
+              <button
+                class="button button-primary"
+                id="exportBtn"
+                type="button"
+                disabled
+              >
+                Descargar reporte CSV
+              </button>
+
+            </div>
+
+          </div>
+
+          <div class="report-card">
+
+            <div class="report-icon">
+              ▤
+            </div>
+
+            <div class="report-content">
+
+              <h3>Reporte detallado de contenidos</h3>
+
+              <p>
+                Topics, materiales, actividades, descripciones,
+                publicación y observaciones.
+              </p>
+
+              <button
+                class="button button-secondary"
+                id="exportDetailBtn"
+                type="button"
+                disabled
+              >
+                Exportar auditoría detallada
+              </button>
+
+            </div>
+
+          </div>
+
+        </section>
+
+      </section>
+
+      <!-- ==============================================
+           FOOTER
+      =============================================== -->
+
+      <footer class="main-footer">
+
+        <span>
+          CLASSROOM AUDIT
+        </span>
+
+        <span>
+          Academic workspace · Personal edition
+        </span>
+
+      </footer>
+
+    </main>
+
+  </div>
+
+  <!-- TOAST -->
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- ==============================================
+       SCRIPTS
+  =============================================== -->
+
+  <script src="google-auth.js"></script>
+  <script src="classroom-api.js"></script>
+  <script src="audit-engine.js"></script>
+  <script src="course-detail.js"></script>
+  <script src="app.js"></script>
+
 </body>
 </html>

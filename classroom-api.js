@@ -1,17 +1,17 @@
 
-const CLASSROOM_API =
-  "https://classroom.googleapis.com/v1";
+const CLASSROOM_API = "https://classroom.googleapis.com/v1";
+
+// ======================================================
+// REQUEST
+// ======================================================
 
 async function classroomRequest(endpoint) {
-  const response = await fetch(
-    `${CLASSROOM_API}${endpoint}`,
-    {
-      headers: {
-        Authorization: `Bearer ${getAccessToken()}`,
-        Accept: "application/json"
-      }
+  const response = await fetch(`${CLASSROOM_API}${endpoint}`, {
+    headers: {
+      Authorization: `Bearer ${getAccessToken()}`,
+      Accept: "application/json"
     }
-  );
+  });
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
@@ -25,9 +25,12 @@ async function classroomRequest(endpoint) {
   return response.json();
 }
 
-// Consulta todos los cursos.
-async function getAllCourses() {
-  const courses = [];
+// ======================================================
+// PAGINACIÓN
+// ======================================================
+
+async function getPaginatedCollection(endpoint, resultKey) {
+  const results = [];
   let pageToken = "";
 
   do {
@@ -39,21 +42,39 @@ async function getAllCourses() {
       params.set("pageToken", pageToken);
     }
 
+    const separator = endpoint.includes("?") ? "&" : "?";
+
     const data = await classroomRequest(
-      `/courses?${params}`
+      `${endpoint}${separator}${params}`
     );
 
-    courses.push(...(data.courses || []));
+    results.push(...(data[resultKey] || []));
     pageToken = data.nextPageToken || "";
 
   } while (pageToken);
+
+  return results;
+}
+
+// ======================================================
+// CURSOS
+// ======================================================
+
+async function getAllCourses() {
+  const courses = await getPaginatedCollection(
+    "/courses",
+    "courses"
+  );
 
   return courses.filter(
     course => course.courseState === "ACTIVE"
   );
 }
 
-// Consulta Topics, materiales, actividades o anuncios.
+// ======================================================
+// COLECCIONES DE CLASSROOM
+// ======================================================
+
 async function getCourseCollection(courseId, collection) {
   const validCollections = {
     topics: "topic",
@@ -68,33 +89,16 @@ async function getCourseCollection(courseId, collection) {
     throw new Error("Colección no válida.");
   }
 
-  const results = [];
-  let pageToken = "";
+  const endpoint =
+    `/courses/${encodeURIComponent(courseId)}/${collection}`;
 
-  do {
-    const params = new URLSearchParams({
-      pageSize: "100"
-    });
-
-    if (pageToken) {
-      params.set("pageToken", pageToken);
-    }
-
-    const endpoint =
-      `/courses/${encodeURIComponent(courseId)}` +
-      `/${collection}?${params}`;
-
-    const data = await classroomRequest(endpoint);
-
-    results.push(...(data[resultKey] || []));
-    pageToken = data.nextPageToken || "";
-
-  } while (pageToken);
-
-  return results;
+  return getPaginatedCollection(endpoint, resultKey);
 }
 
-// Auditoría individual de un curso.
+// ======================================================
+// AUDITORÍA DEL CURSO
+// ======================================================
+
 async function auditGoogleCourse(course) {
   const [
     topics,
@@ -110,9 +114,10 @@ async function auditGoogleCourse(course) {
 
   return {
     id: course.id,
-    name: course.name,
+    name: course.name || "Curso sin nombre",
     section: course.section || "",
     description: course.description || "",
+    courseState: course.courseState,
 
     topics,
     materials,
@@ -129,7 +134,10 @@ async function auditGoogleCourse(course) {
   };
 }
 
-// Auditoría general.
+// ======================================================
+// AUDITORÍA GENERAL
+// ======================================================
+
 async function runClassroomAudit() {
   const courses = await getAllCourses();
 
@@ -140,81 +148,4 @@ async function runClassroomAudit() {
   }
 
   return results;
-}
-
-// ======================================================
-// ORGANIZAR CONTENIDO DEL CURSO POR TOPIC
-// ======================================================
-
-function organizeCourseContent(audit) {
-  const topics = audit.topics.map(topic => {
-    const topicId = topic.topicId;
-
-    const materials = audit.materials.filter(
-      material => material.topicId === topicId
-    );
-
-    const activities = audit.activities.filter(
-      activity => activity.topicId === topicId
-    );
-
-    return {
-      ...topic,
-      materials,
-      activities,
-
-      checks: {
-        hasMaterials: materials.length > 0,
-        hasActivities: activities.length > 0,
-        materialsWithDescription: materials.filter(
-          material => material.description?.trim()
-        ).length,
-        activitiesWithDescription: activities.filter(
-          activity => activity.description?.trim()
-        ).length
-      }
-    };
-  });
-
-  // Materiales sin Topic asignado
-  const unorganizedMaterials = audit.materials.filter(
-    material => !material.topicId
-  );
-
-  // Actividades sin Topic asignado
-  const unorganizedActivities = audit.activities.filter(
-    activity => !activity.topicId
-  );
-
-  // Topics que no contienen materiales ni actividades
-  const emptyTopics = topics.filter(
-    topic =>
-      topic.materials.length === 0 &&
-      topic.activities.length === 0
-  );
-
-  return {
-    topics,
-    unorganizedMaterials,
-    unorganizedActivities,
-    emptyTopics,
-
-    summary: {
-      totalTopics: topics.length,
-      totalMaterials: audit.materials.length,
-      totalActivities: audit.activities.length,
-
-      materialsWithoutDescription: audit.materials.filter(
-        material => !material.description?.trim()
-      ).length,
-
-      activitiesWithoutDescription: audit.activities.filter(
-        activity => !activity.description?.trim()
-      ).length,
-
-      unorganizedMaterials: unorganizedMaterials.length,
-      unorganizedActivities: unorganizedActivities.length,
-      emptyTopics: emptyTopics.length
-    }
-  };
 }
