@@ -176,10 +176,9 @@ function isCourseComplete(course) {
     );
 
     const detailedAudit = getCourseAudit(course);
+    const summary = detailedAudit?.summary;
 
-    const summary = safeObject(detailedAudit?.summary);
-
-    const contentComplete = Boolean(detailedAudit) &&
+    const contentComplete = Boolean(summary) &&
         Number(summary.unpublishedItems || 0) === 0 &&
         Number(summary.warningItems || 0) === 0 &&
         Number(summary.unorganizedItems || 0) === 0 &&
@@ -187,7 +186,6 @@ function isCourseComplete(course) {
 
     return checklistComplete && contentComplete;
 }
-
 function getPendingRequirements(course) {
     const checks = getCourseChecks(course);
 
@@ -850,7 +848,7 @@ function createFindingCard(finding) {
     return card;
 }
 
-function renderFindings() {
+ function renderFindings() {
     const findings = collectFindings();
 
     const total = findings.length;
@@ -867,15 +865,25 @@ function renderFindings() {
         item => item.type === "unorganized"
     ).length;
 
-    // CAMBIO: comprobar que cada elemento exista.
-    setText("totalFindings", total);
-    setText("unpublishedCount", unpublished);
-    setText("incompleteCount", incomplete);
-    setText("unorganizedCount", unorganized);
-    setText("findingsBadge", total);
+    // Actualizar únicamente los elementos que existen en el HTML.
+    const counters = {
+        totalFindings: total,
+        unpublishedCount: unpublished,
+        incompleteCount: incomplete,
+        unorganizedCount: unorganized,
+        findingsBadge: total
+    };
 
-    const recent = getElement("recentFindings");
-    const full = getElement("findingsList");
+    Object.entries(counters).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+
+        if (element) {
+            element.textContent = value;
+        }
+    });
+
+    const recent = document.getElementById("recentFindings");
+    const full = document.getElementById("findingsList");
 
     recent?.replaceChildren();
     full?.replaceChildren();
@@ -896,18 +904,6 @@ function renderFindings() {
     findings.slice(0, 5).forEach(finding => {
         recent?.append(createFindingCard(finding));
     });
-
-    // Respetar los filtros actuales cuando se vuelve a renderizar.
-    const typeFilter = getElement("findingTypeFilter");
-    const courseFilter = getElement("findingCourseFilter");
-
-    if (
-        (typeFilter && typeFilter.value !== "all") ||
-        (courseFilter && courseFilter.value !== "all")
-    ) {
-        filterFindings();
-        return;
-    }
 
     findings.forEach(finding => {
         full?.append(createFindingCard(finding));
