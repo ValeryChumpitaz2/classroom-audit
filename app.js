@@ -1,3 +1,4 @@
+
 /**
  * CLASSROOM AUDIT
  * Dashboard, navegación, filtros, hallazgos y reportes.
@@ -38,7 +39,47 @@ let auditedCourses = [];
 let manualChecks = loadManualChecks();
 
 let activeView = "overview";
-let toastTimer;
+let toastTimer = null;
+
+// ======================================================
+// UTILIDADES DOM
+// ======================================================
+
+function getElement(id) {
+    return document.getElementById(id);
+}
+
+function setText(id, value) {
+    const element = getElement(id);
+
+    if (element) {
+        element.textContent = value ?? "";
+    }
+}
+
+function setHTML(id, value) {
+    const element = getElement(id);
+
+    if (element) {
+        element.innerHTML = value;
+    }
+}
+
+function setHidden(id, hidden) {
+    const element = getElement(id);
+
+    if (element) {
+        element.hidden = hidden;
+    }
+}
+
+function safeArray(value) {
+    return Array.isArray(value) ? value : [];
+}
+
+function safeObject(value) {
+    return value && typeof value === "object" ? value : {};
+}
 
 // ======================================================
 // ALMACENAMIENTO
@@ -46,27 +87,37 @@ let toastTimer;
 
 function loadManualChecks() {
     try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-    } catch {
+        const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        return stored && typeof stored === "object" ? stored : {};
+    } catch (error) {
+        console.warn("No se pudieron cargar las revisiones manuales:", error);
         return {};
     }
 }
 
 function saveManualChecks() {
-    localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(manualChecks)
-    );
+    try {
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(manualChecks)
+        );
+    } catch (error) {
+        console.error("No se pudieron guardar las revisiones:", error);
+        showToast("No se pudieron guardar los cambios.");
+    }
 }
 
 // ======================================================
-// UTILIDADES
+// UTILIDADES GENERALES
 // ======================================================
 
 function showToast(message) {
-    const toast = document.getElementById("toast");
+    const toast = getElement("toast");
 
-    if (!toast) return;
+    if (!toast) {
+        console.info(message);
+        return;
+    }
 
     toast.textContent = message;
     toast.classList.add("show");
@@ -78,24 +129,30 @@ function showToast(message) {
     }, 3000);
 }
 
-function getSemester(courseName) {
+function getSemester(courseName = "") {
+    const normalizedName = String(courseName).toUpperCase();
+
     const match = semesterMap.find(item =>
-        courseName.toUpperCase().includes(item.code)
+        normalizedName.includes(item.code)
     );
 
     return match ? match.semester : null;
 }
 
-function getSP(courseName) {
+function getSP(courseName = "") {
+    const normalizedName = String(courseName).toUpperCase();
+
     const match = semesterMap.find(item =>
-        courseName.toUpperCase().includes(item.code)
+        normalizedName.includes(item.code)
     );
 
     return match?.sp || null;
 }
 
 function getEligibleCourses(courses) {
-    return courses.filter(course => getSemester(course.name) !== null);
+    return safeArray(courses).filter(course =>
+        getSemester(course?.name) !== null
+    );
 }
 
 function getCourseAudit(course) {
@@ -103,8 +160,10 @@ function getCourseAudit(course) {
 }
 
 function getCourseChecks(course) {
+    const checks = safeObject(course.checks);
+
     return {
-        ...course.checks,
+        ...checks,
         comments: Boolean(manualChecks[course.id]?.comments)
     };
 }
@@ -113,17 +172,18 @@ function isCourseComplete(course) {
     const checks = getCourseChecks(course);
 
     const checklistComplete = requirements.every(
-        requirement => checks[require.key]
+        requirement => Boolean(checks[requirement.key])
     );
 
     const detailedAudit = getCourseAudit(course);
 
-    const contentComplete = detailedAudit
-        ? detailedAudit.summary.unpublishedItems === 0 &&
-        detailedAudit.summary.warningItems === 0 &&
-        detailedAudit.summary.unorganizedItems === 0 &&
-        detailedAudit.summary.emptyTopics === 0
-        : false;
+    const summary = safeObject(detailedAudit?.summary);
+
+    const contentComplete = Boolean(detailedAudit) &&
+        Number(summary.unpublishedItems || 0) === 0 &&
+        Number(summary.warningItems || 0) === 0 &&
+        Number(summary.unorganizedItems || 0) === 0 &&
+        Number(summary.emptyTopics || 0) === 0;
 
     return checklistComplete && contentComplete;
 }
@@ -132,7 +192,7 @@ function getPendingRequirements(course) {
     const checks = getCourseChecks(course);
 
     return requirements.filter(
-        requirement => !checks[require.key]
+        requirement => !checks[requirement.key]
     );
 }
 
@@ -141,32 +201,39 @@ function getPendingRequirements(course) {
 // ======================================================
 
 function initializeTheme() {
-    const savedTheme = localStorage.getItem(THEME_KEY);
+    let savedTheme = "light";
 
-    const theme = savedTheme === "dark"
-        ? "dark"
-        : "light";
+    try {
+        savedTheme = localStorage.getItem(THEME_KEY) || "light";
+    } catch (error) {
+        console.warn("No se pudo recuperar el tema guardado.");
+    }
 
-    applyTheme(theme);
+    applyTheme(savedTheme === "dark" ? "dark" : "light");
 }
 
 function applyTheme(theme) {
-    document.body.dataset.theme = theme;
+    const selectedTheme = theme === "dark" ? "dark" : "light";
 
-    localStorage.setItem(THEME_KEY, theme);
+    document.body.dataset.theme = selectedTheme;
 
-    const label = document.getElementById("themeLabel");
-    const icon = document.getElementById("themeIcon");
+    try {
+        localStorage.setItem(THEME_KEY, selectedTheme);
+    } catch (error) {
+        console.warn("No se pudo guardar la preferencia del tema.");
+    }
 
-    if (label) {
-        label.textContent = theme === "dark"
+    setText(
+        "themeLabel",
+        selectedTheme === "dark"
             ? "Cambiar a tema claro"
-            : "Cambiar a tema oscuro";
-    }
+            : "Cambiar a tema oscuro"
+    );
 
-    if (icon) {
-        icon.textContent = theme === "dark" ? "☀" : "◐";
-    }
+    setText(
+        "themeIcon",
+        selectedTheme === "dark" ? "☀" : "◐"
+    );
 }
 
 function toggleTheme() {
@@ -193,24 +260,20 @@ function switchView(viewName) {
         );
     });
 
-    const view = document.getElementById(`${viewName}View`);
+    const view = getElement(`${viewName}View`);
 
     if (view) {
         view.classList.add("active");
     }
 
-    const breadcrumb = document.getElementById("breadcrumbCurrent");
+    const labels = {
+        overview: "Overview",
+        courses: "Cursos",
+        findings: "Hallazgos",
+        reports: "Reportes"
+    };
 
-    if (breadcrumb) {
-        const labels = {
-            overview: "Overview",
-            courses: "Cursos",
-            findings: "Hallazgos",
-            reports: "Reportes"
-        };
-
-        breadcrumb.textContent = labels[viewName] || viewName;
-    }
+    setText("breadcrumbCurrent", labels[viewName] || viewName);
 
     closeSidebar();
 }
@@ -234,16 +297,20 @@ function initializeNavigation() {
 // ======================================================
 
 function initializeSidebar() {
-    const sidebar = document.getElementById("sidebar");
-    const menuToggle = document.getElementById("menuToggle");
+    const sidebar = getElement("sidebar");
+    const menuToggle = getElement("menuToggle");
+
     if (!sidebar || !menuToggle) return;
 
-    const overlay = document.createElement("div");
+    let overlay = getElement("sidebarOverlay");
 
-    overlay.className = "sidebar-overlay";
-    overlay.id = "sidebarOverlay";
+    if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.className = "sidebar-overlay";
+        overlay.id = "sidebarOverlay";
 
-    document.body.append(overlay);
+        document.body.append(overlay);
+    }
 
     menuToggle.addEventListener("click", () => {
         sidebar.classList.toggle("open");
@@ -254,8 +321,8 @@ function initializeSidebar() {
 }
 
 function closeSidebar() {
-    document.getElementById("sidebar")?.classList.remove("open");
-    document.getElementById("sidebarOverlay")?.classList.remove("show");
+    getElement("sidebar")?.classList.remove("open");
+    getElement("sidebarOverlay")?.classList.remove("show");
 }
 
 // ======================================================
@@ -281,12 +348,11 @@ function createCheckItem(course, requirement) {
         if (requirement.automatic) return;
 
         manualChecks[course.id] = {
-            ...manualChecks[course.id],
+            ...safeObject(manualChecks[course.id]),
             [requirement.key]: input.checked
         };
 
         saveManualChecks();
-
         renderAll();
     });
 
@@ -310,11 +376,90 @@ function createApiDetail(label, amount) {
     name.textContent = label;
 
     const value = document.createElement("span");
-    value.textContent = `${amount} encontrados`;
+    value.textContent = `${Number(amount) || 0} encontrados`;
 
     item.append(name, value);
 
     return item;
+}
+
+// ======================================================
+// DETALLE DE AUDITORÍA
+// ======================================================
+
+function renderCourseAuditDetail(course) {
+    const container = document.createElement("div");
+    container.className = "audit-detail";
+
+    const detailed = getCourseAudit(course);
+
+    if (!detailed) {
+        container.textContent = "No hay información detallada disponible.";
+        return container;
+    }
+
+    const findings = safeObject(detailed.findings);
+
+    const sections = [
+        {
+            title: "Elementos sin publicar",
+            items: safeArray(findings.unpublished)
+        },
+        {
+            title: "Contenido incompleto",
+            items: safeArray(findings.warnings)
+        },
+        {
+            title: "Materiales sin Topic",
+            items: safeArray(findings.unorganizedMaterials)
+        },
+        {
+            title: "Actividades sin Topic",
+            items: safeArray(findings.unorganizedActivities)
+        },
+        {
+            title: "Topics vacíos",
+            items: safeArray(findings.emptyTopics)
+        }
+    ];
+
+    sections.forEach(section => {
+        const sectionElement = document.createElement("section");
+        sectionElement.className = "audit-detail-section";
+
+        const heading = document.createElement("h4");
+        heading.textContent = `${section.title} (${section.items.length})`;
+
+        sectionElement.append(heading);
+
+        if (!section.items.length) {
+            const empty = document.createElement("p");
+            empty.className = "audit-detail-empty";
+            empty.textContent = "No se encontraron observaciones.";
+            sectionElement.append(empty);
+        } else {
+            const list = document.createElement("ul");
+
+            section.items.forEach(item => {
+                const li = document.createElement("li");
+
+                const title = item.title || item.name || "Elemento sin título";
+                const observations = safeArray(item.observations);
+
+                li.textContent = observations.length
+                    ? `${title}: ${observations.join(" · ")}`
+                    : title;
+
+                list.append(li);
+            });
+
+            sectionElement.append(list);
+        }
+
+        container.append(sectionElement);
+    });
+
+    return container;
 }
 
 // ======================================================
@@ -339,7 +484,7 @@ function createCourseCard(course) {
 
     const code = document.createElement("div");
     code.className = "course-code";
-    code.textContent = course.name;
+    code.textContent = course.name || "Curso sin nombre";
 
     const semester = document.createElement("span");
     semester.className = "semester-tag";
@@ -350,16 +495,22 @@ function createCourseCard(course) {
 
     const name = document.createElement("div");
     name.className = "course-name";
-    name.textContent = course.section || course.description ||
+    name.textContent = course.section ||
+        course.description ||
         "Curso de Google Classroom";
 
     info.append(code, semester, name);
 
     const status = document.createElement("span");
     status.className = "status" + (complete ? " complete" : "");
+
+    const warningCount = Number(
+        detailedAudit?.summary?.warningItems || 0
+    );
+
     status.textContent = complete
         ? "Completo"
-        : `${pendingCount + (detailedAudit?.summary.warningItems || 0)} pendientes`;
+        : `${pendingCount + warningCount} pendientes`;
 
     header.append(info, status);
 
@@ -382,10 +533,10 @@ function createCourseCard(course) {
     grid.className = "api-grid";
 
     grid.append(
-        createApiDetail("Topics", course.topics.length),
-        createApiDetail("Materiales", course.materials.length),
-        createApiDetail("Actividades", course.activities.length),
-        createApiDetail("Anuncios", course.announcements.length)
+        createApiDetail("Topics", safeArray(course.topics).length),
+        createApiDetail("Materiales", safeArray(course.materials).length),
+        createApiDetail("Actividades", safeArray(course.activities).length),
+        createApiDetail("Anuncios", safeArray(course.announcements).length)
     );
 
     details.append(summary, grid);
@@ -430,19 +581,19 @@ function createCourseCard(course) {
 }
 
 // ======================================================
-// FILTROS
+// FILTROS DE CURSOS
 // ======================================================
 
 function getCourseFilters(prefix = "") {
-    const searchInput = document.getElementById(
+    const searchInput = getElement(
         prefix ? `${prefix}SearchInput` : "searchInput"
     );
 
-    const statusFilter = document.getElementById(
+    const statusFilter = getElement(
         prefix ? `${prefix}StatusFilter` : "statusFilter"
     );
 
-    const semesterFilter = document.getElementById(
+    const semesterFilter = getElement(
         prefix ? `${prefix}SemesterFilter` : "semesterFilter"
     );
 
@@ -460,9 +611,9 @@ function filterCourses(prefix = "") {
         const complete = isCourseComplete(course);
 
         const matchesSearch =
-            course.name.toLowerCase().includes(filters.search) ||
-            (course.section || "").toLowerCase().includes(filters.search) ||
-            (course.description || "").toLowerCase().includes(filters.search);
+            String(course.name || "").toLowerCase().includes(filters.search) ||
+            String(course.section || "").toLowerCase().includes(filters.search) ||
+            String(course.description || "").toLowerCase().includes(filters.search);
 
         const semester = getSemester(course.name);
 
@@ -484,7 +635,7 @@ function filterCourses(prefix = "") {
 // ======================================================
 
 function renderCourseList(listId, prefix = "") {
-    const list = document.getElementById(listId);
+    const list = getElement(listId);
 
     if (!list) return;
 
@@ -508,7 +659,7 @@ function renderCourseList(listId, prefix = "") {
         const sa = getSemester(a.name) ?? 99;
         const sb = getSemester(b.name) ?? 99;
 
-        return sa - sb || a.name.localeCompare(b.name);
+        return sa - sb || String(a.name).localeCompare(String(b.name));
     });
 
     filtered.forEach(course => {
@@ -548,19 +699,18 @@ function updateDashboard() {
     };
 
     Object.entries(values).forEach(([id, value]) => {
-        const element = document.getElementById(id);
-
-        if (element) element.textContent = value;
+        setText(id, value);
     });
 
-    const progressBar = document.getElementById("progressBar");
+    const progressBar = getElement("progressBar");
 
     if (progressBar) {
         progressBar.style.width = `${percentage}%`;
+        progressBar.setAttribute("aria-valuenow", String(percentage));
     }
 
-    const exportBtn = document.getElementById("exportBtn");
-    const exportDetailBtn = document.getElementById("exportDetailBtn");
+    const exportBtn = getElement("exportBtn");
+    const exportDetailBtn = getElement("exportDetailBtn");
 
     if (exportBtn) exportBtn.disabled = total === 0;
     if (exportDetailBtn) exportDetailBtn.disabled = total === 0;
@@ -575,53 +725,53 @@ function collectFindings() {
 
     auditedCourses.forEach(course => {
         const courseName = course.name;
+        const courseFindings = safeObject(course.findings);
 
         // ELEMENTOS SIN PUBLICAR
-        course.findings.unpublished.forEach(item => {
+        safeArray(courseFindings.unpublished).forEach(item => {
             findings.push({
                 type: "unpublished",
                 course: courseName,
-                title: item.title,
+                title: item.title || "Elemento sin título",
                 message: "El elemento se encuentra en borrador.",
                 severity: "danger",
-                itemType: item.type
+                itemType: item.type || "elemento"
             });
         });
 
         // CONTENIDO INCOMPLETO
-        // Evita duplicar los elementos que ya se reportan como "sin Topic".
         const unorganizedMaterialIds = new Set(
-            course.findings.unorganizedMaterials.map(item => item.id)
+            safeArray(courseFindings.unorganizedMaterials).map(item => item.id)
         );
 
         const unorganizedActivityIds = new Set(
-            course.findings.unorganizedActivities.map(item => item.id)
+            safeArray(courseFindings.unorganizedActivities).map(item => item.id)
         );
 
-        course.findings.warnings
+        safeArray(courseFindings.warnings)
             .filter(item =>
                 !(item.type === "material" && unorganizedMaterialIds.has(item.id)) &&
                 !(item.type === "activity" && unorganizedActivityIds.has(item.id))
             )
             .forEach(item => {
-                item.observations.forEach(observation => {
+                safeArray(item.observations).forEach(observation => {
                     findings.push({
                         type: "incomplete",
                         course: courseName,
-                        title: item.title,
+                        title: item.title || "Elemento sin título",
                         message: observation,
                         severity: "warning",
-                        itemType: item.type
+                        itemType: item.type || "elemento"
                     });
                 });
             });
 
         // MATERIAL SIN TOPIC
-        course.findings.unorganizedMaterials.forEach(item => {
+        safeArray(courseFindings.unorganizedMaterials).forEach(item => {
             findings.push({
                 type: "unorganized",
                 course: courseName,
-                title: item.title,
+                title: item.title || "Material sin título",
                 message: "Material sin Topic asignado.",
                 severity: "warning",
                 itemType: "material"
@@ -629,11 +779,11 @@ function collectFindings() {
         });
 
         // ACTIVIDAD SIN TOPIC
-        course.findings.unorganizedActivities.forEach(item => {
+        safeArray(courseFindings.unorganizedActivities).forEach(item => {
             findings.push({
                 type: "unorganized",
                 course: courseName,
-                title: item.title,
+                title: item.title || "Actividad sin título",
                 message: "Actividad sin Topic asignado.",
                 severity: "warning",
                 itemType: "activity"
@@ -641,7 +791,7 @@ function collectFindings() {
         });
 
         // TOPICS VACÍOS
-        course.findings.emptyTopics.forEach(topic => {
+        safeArray(courseFindings.emptyTopics).forEach(topic => {
             findings.push({
                 type: "unorganized",
                 course: courseName,
@@ -653,7 +803,7 @@ function collectFindings() {
         });
 
         // OBSERVACIONES DEL CURSO
-        course.findings.courseObservations.forEach(message => {
+        safeArray(courseFindings.courseObservations).forEach(message => {
             findings.push({
                 type: "incomplete",
                 course: courseName,
@@ -674,6 +824,7 @@ function createFindingCard(finding) {
 
     const badge = document.createElement("span");
     badge.className = `finding-type ${finding.severity}`;
+
     badge.textContent = finding.type === "unpublished"
         ? "Sin publicar"
         : finding.type === "unorganized"
@@ -694,7 +845,6 @@ function createFindingCard(finding) {
     meta.textContent = `${finding.course} · ${finding.itemType}`;
 
     content.append(title, message, meta);
-
     card.append(badge, content);
 
     return card;
@@ -716,21 +866,24 @@ function renderFindings() {
     const unorganized = findings.filter(
         item => item.type === "unorganized"
     ).length;
-    document.getElementById("totalFindings").textContent = total;
-    document.getElementById("unpublishedCount").textContent = unpublished;
-    document.getElementById("incompleteCount").textContent = incomplete;
-    document.getElementById("unorganizedCount").textContent = unorganized;
-    document.getElementById("findingsBadge").textContent = total;
 
-    const recent = document.getElementById("recentFindings");
-    const full = document.getElementById("findingsList");
+    // CAMBIO: comprobar que cada elemento exista.
+    setText("totalFindings", total);
+    setText("unpublishedCount", unpublished);
+    setText("incompleteCount", incomplete);
+    setText("unorganizedCount", unorganized);
+    setText("findingsBadge", total);
 
-    if (recent) recent.replaceChildren();
-    if (full) full.replaceChildren();
+    const recent = getElement("recentFindings");
+    const full = getElement("findingsList");
+
+    recent?.replaceChildren();
+    full?.replaceChildren();
 
     if (!findings.length) {
         const empty = document.createElement("div");
         empty.className = "empty-inline";
+
         empty.textContent = auditResults.length
             ? "No se encontraron hallazgos."
             : "Sincroniza tus cursos para revisar los hallazgos.";
@@ -744,6 +897,18 @@ function renderFindings() {
         recent?.append(createFindingCard(finding));
     });
 
+    // Respetar los filtros actuales cuando se vuelve a renderizar.
+    const typeFilter = getElement("findingTypeFilter");
+    const courseFilter = getElement("findingCourseFilter");
+
+    if (
+        (typeFilter && typeFilter.value !== "all") ||
+        (courseFilter && courseFilter.value !== "all")
+    ) {
+        filterFindings();
+        return;
+    }
+
     findings.forEach(finding => {
         full?.append(createFindingCard(finding));
     });
@@ -754,21 +919,19 @@ function renderFindings() {
 // ======================================================
 
 function initializeFindingFilters() {
-    const typeFilter = document.getElementById("findingTypeFilter");
-    const courseFilter = document.getElementById("findingCourseFilter");
+    const typeFilter = getElement("findingTypeFilter");
+    const courseFilter = getElement("findingCourseFilter");
 
-    if (!typeFilter || !courseFilter) return;
-
-    typeFilter.addEventListener("change", filterFindings);
-    courseFilter.addEventListener("change", filterFindings);
+    typeFilter?.addEventListener("change", filterFindings);
+    courseFilter?.addEventListener("change", filterFindings);
 }
 
 function populateFindingCourseFilter() {
-    const select = document.getElementById("findingCourseFilter");
+    const select = getElement("findingCourseFilter");
 
     if (!select) return;
 
-    const selectedValue = select.value;
+    const selectedValue = select.value || "all";
 
     select.replaceChildren();
 
@@ -780,18 +943,21 @@ function populateFindingCourseFilter() {
 
     auditResults.forEach(course => {
         const option = document.createElement("option");
+
         option.value = course.id;
         option.textContent = course.name;
 
         select.append(option);
     });
 
-    select.value = selectedValue || "all";
+    select.value = auditResults.some(
+        course => course.id === selectedValue
+    ) ? selectedValue : "all";
 }
 
 function filterFindings() {
-    const type = document.getElementById("findingTypeFilter")?.value || "all";
-    const courseId = document.getElementById("findingCourseFilter")?.value || "all";
+    const type = getElement("findingTypeFilter")?.value || "all";
+    const courseId = getElement("findingCourseFilter")?.value || "all";
 
     const findings = collectFindings();
 
@@ -810,7 +976,7 @@ function filterFindings() {
         return matchesType && matchesCourse;
     });
 
-    const list = document.getElementById("findingsList");
+    const list = getElement("findingsList");
 
     if (!list) return;
 
@@ -854,7 +1020,9 @@ function downloadCSV(filename, rows) {
     link.href = url;
     link.download = filename;
 
+    document.body.appendChild(link);
     link.click();
+    link.remove();
 
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
@@ -864,7 +1032,10 @@ function downloadCSV(filename, rows) {
 // ======================================================
 
 function exportReport() {
-    if (!auditResults.length) return;
+    if (!auditResults.length) {
+        showToast("Primero sincroniza tus cursos.");
+        return;
+    }
 
     const headers = [
         "Curso",
@@ -884,6 +1055,7 @@ function exportReport() {
     const rows = auditResults.map(course => {
         const checks = getCourseChecks(course);
         const detailed = getCourseAudit(course);
+        const summary = safeObject(detailed?.summary);
 
         return [
             course.name,
@@ -893,13 +1065,13 @@ function exportReport() {
             ...requirements.map(item =>
                 checks[item.key] ? "Completo" : "Pendiente"
             ),
-            course.topics.length,
-            course.materials.length,
-            course.activities.length,
-            course.announcements.length,
-            detailed?.summary.warningItems || 0,
-            detailed?.summary.unpublishedItems || 0,
-            `${detailed?.summary.progress || 0}%`
+            safeArray(course.topics).length,
+            safeArray(course.materials).length,
+            safeArray(course.activities).length,
+            safeArray(course.announcements).length,
+            Number(summary.warningItems || 0),
+            Number(summary.unpublishedItems || 0),
+            `${Number(summary.progress || 0)}%`
         ];
     });
 
@@ -916,7 +1088,10 @@ function exportReport() {
 // ======================================================
 
 function exportDetailReport() {
-    if (!auditedCourses.length) return;
+    if (!auditedCourses.length) {
+        showToast("Primero sincroniza tus cursos.");
+        return;
+    }
 
     const headers = [
         "Curso",
@@ -934,8 +1109,8 @@ function exportDetailReport() {
     const rows = [];
 
     auditedCourses.forEach(course => {
-        course.topics.forEach(topic => {
-            topic.materials.forEach(material => {
+        safeArray(course.topics).forEach(topic => {
+            safeArray(topic.materials).forEach(material => {
                 rows.push([
                     course.name,
                     getSP(course.name),
@@ -945,12 +1120,12 @@ function exportDetailReport() {
                     material.description,
                     material.state,
                     material.status,
-                    material.observations.join(" | "),
-                    (material.information || []).join(" | ")
+                    safeArray(material.observations).join(" | "),
+                    safeArray(material.information).join(" | ")
                 ]);
             });
 
-            topic.activities.forEach(activity => {
+            safeArray(topic.activities).forEach(activity => {
                 rows.push([
                     course.name,
                     getSP(course.name),
@@ -960,13 +1135,13 @@ function exportDetailReport() {
                     activity.description,
                     activity.state,
                     activity.status,
-                    activity.observations.join(" | "),
-                    (activity.information || []).join(" | ")
+                    safeArray(activity.observations).join(" | "),
+                    safeArray(activity.information).join(" | ")
                 ]);
             });
         });
 
-        course.unorganizedMaterials.forEach(material => {
+        safeArray(course.unorganizedMaterials).forEach(material => {
             rows.push([
                 course.name,
                 getSP(course.name),
@@ -976,12 +1151,12 @@ function exportDetailReport() {
                 material.description,
                 material.state,
                 material.status,
-                material.observations.join(" | "),
-                (material.information || []).join(" | ")
+                safeArray(material.observations).join(" | "),
+                safeArray(material.information).join(" | ")
             ]);
         });
 
-        course.unorganizedActivities.forEach(activity => {
+        safeArray(course.unorganizedActivities).forEach(activity => {
             rows.push([
                 course.name,
                 getSP(course.name),
@@ -991,12 +1166,12 @@ function exportDetailReport() {
                 activity.description,
                 activity.state,
                 activity.status,
-                activity.observations.join(" | "),
-                (activity.information || []).join(" | ")
+                safeArray(activity.observations).join(" | "),
+                safeArray(activity.information).join(" | ")
             ]);
         });
 
-        course.announcements.forEach(announcement => {
+        safeArray(course.announcements).forEach(announcement => {
             rows.push([
                 course.name,
                 getSP(course.name),
@@ -1006,8 +1181,8 @@ function exportDetailReport() {
                 announcement.description,
                 "",
                 announcement.status,
-                announcement.observations.join(" | "),
-                (announcement.information || []).join(" | ")
+                safeArray(announcement.observations).join(" | "),
+                safeArray(announcement.information).join(" | ")
             ]);
         });
     });
@@ -1027,8 +1202,8 @@ function exportDetailReport() {
 function renderAll() {
     updateDashboard();
     renderCourses();
-    renderFindings();
     populateFindingCourseFilter();
+    renderFindings();
 }
 
 // ======================================================
@@ -1042,8 +1217,8 @@ async function synchronizeClassroom() {
     }
 
     const buttons = [
-        document.getElementById("syncBtn"),
-        document.getElementById("coursesSyncBtn")
+        getElement("syncBtn"),
+        getElement("coursesSyncBtn")
     ].filter(Boolean);
 
     buttons.forEach(button => {
@@ -1052,37 +1227,32 @@ async function synchronizeClassroom() {
         button.textContent = "Sincronizando...";
     });
 
-    const connectionStatus = document.getElementById("connectionStatus");
-
-    if (connectionStatus) {
-        connectionStatus.textContent = "Sincronizando cursos...";
-    }
+    setText("connectionStatus", "Sincronizando cursos...");
 
     try {
         const allCourses = await runClassroomAudit();
 
         // SOLO SP1-SP4.
-        // Cursos SP5 y otros códigos quedan excluidos de la auditoría.
+        // Cursos SP5 y otros códigos quedan excluidos.
         auditResults = getEligibleCourses(allCourses);
 
-        auditedCourses = auditResults.map(auditCourseContent);
+        // Auditar contenido de cada curso elegible.
+        auditedCourses = auditResults.map(course =>
+            auditCourseContent(course)
+        );
 
         renderAll();
 
-        const status = document.getElementById("connectionStatus");
+        setText(
+            "connectionStatus",
+            `${auditResults.length} cursos SP1–SP4 auditados`
+        );
 
-        if (status) {
-            status.textContent =
-                `${auditResults.length} cursos SP1–SP4 auditados`;
-        }
-
-        const lastSync = document.getElementById("lastSync");
-
-        if (lastSync) {
-            lastSync.textContent =
-                "Última sincronización: " +
-                new Date().toLocaleString("es-PE");
-        }
+        setText(
+            "lastSync",
+            "Última sincronización: " +
+            new Date().toLocaleString("es-PE")
+        );
 
         showToast(
             `Auditoría finalizada. ${auditResults.length} cursos evaluados.`
@@ -1091,18 +1261,18 @@ async function synchronizeClassroom() {
     } catch (error) {
         console.error("Error de auditoría:", error);
 
-        const statusElement = document.getElementById("connectionStatus");
+        setText("connectionStatus", "Error de sincronización");
 
-        if (statusElement) {
-            statusElement.textContent = "Error de sincronización";
-        }
-
-        showToast(error.message || "No se pudo sincronizar Classroom.");
+        showToast(
+            error?.message || "No se pudo sincronizar Classroom."
+        );
 
     } finally {
         buttons.forEach(button => {
             button.disabled = !isGoogleConnected();
-            button.textContent = button.dataset.originalText || "Sincronizar";
+
+            button.textContent =
+                button.dataset.originalText || "Sincronizar";
         });
     }
 }
@@ -1112,20 +1282,28 @@ async function synchronizeClassroom() {
 // ======================================================
 
 window.addEventListener("google-auth-success", () => {
-    document.getElementById("connectionStatus").textContent =
-        "Google conectado correctamente";
+    setText(
+        "connectionStatus",
+        "Google conectado correctamente"
+    );
 
-    document.getElementById("googleConnectionLabel").innerHTML =
-        '<span class="status-dot connected"></span> Conectado';
+    setHTML(
+        "googleConnectionLabel",
+        '<span class="status-dot connected"></span> Conectado'
+    );
 
-    document.getElementById("connectionIndicator").innerHTML =
-        '<span class="status-dot connected"></span><span>Conectado</span>';
+    setHTML(
+        "connectionIndicator",
+        '<span class="status-dot connected"></span><span>Conectado</span>'
+    );
 
-    document.getElementById("googleAccountInfo").textContent =
-        "Cuenta conectada. Listo para sincronizar.";
+    setText(
+        "googleAccountInfo",
+        "Cuenta conectada. Listo para sincronizar."
+    );
 
-    document.getElementById("connectGoogleBtn").hidden = true;
-    document.getElementById("disconnectBtn").hidden = false;
+    setHidden("connectGoogleBtn", true);
+    setHidden("disconnectBtn", false);
 
     synchronizeClassroom();
 });
@@ -1134,23 +1312,27 @@ window.addEventListener("google-auth-disconnected", () => {
     auditResults = [];
     auditedCourses = [];
 
-    document.getElementById("connectionStatus").textContent =
-        "Sin conexión";
+    setText("connectionStatus", "Sin conexión");
 
-    document.getElementById("googleConnectionLabel").innerHTML =
-        '<span class="status-dot disconnected"></span> No conectado';
+    setHTML(
+        "googleConnectionLabel",
+        '<span class="status-dot disconnected"></span> No conectado'
+    );
 
-    document.getElementById("connectionIndicator").innerHTML =
-        '<span class="status-dot disconnected"></span><span>Sin conexión</span>';
+    setHTML(
+        "connectionIndicator",
+        '<span class="status-dot disconnected"></span><span>Sin conexión</span>'
+    );
 
-    document.getElementById("googleAccountInfo").textContent =
-        "Conecta tu cuenta para analizar tus cursos.";
+    setText(
+        "googleAccountInfo",
+        "Conecta tu cuenta para analizar tus cursos."
+    );
 
-    document.getElementById("connectGoogleBtn").hidden = false;
-    document.getElementById("disconnectBtn").hidden = true;
+    setHidden("connectGoogleBtn", false);
+    setHidden("disconnectBtn", true);
 
-    document.getElementById("lastSync").textContent =
-        "Sin sincronizar";
+    setText("lastSync", "Sin sincronizar");
 
     renderAll();
 
@@ -1162,45 +1344,46 @@ window.addEventListener("google-auth-disconnected", () => {
 // ======================================================
 
 function initializeEvents() {
-    document.getElementById("connectGoogleBtn")
+    getElement("connectGoogleBtn")
         ?.addEventListener("click", connectGoogle);
 
-    document.getElementById("emptyConnectBtn")
+    getElement("emptyConnectBtn")
         ?.addEventListener("click", connectGoogle);
 
-    document.getElementById("syncBtn")
+    getElement("syncBtn")
         ?.addEventListener("click", synchronizeClassroom);
 
-    document.getElementById("coursesSyncBtn")
+    getElement("coursesSyncBtn")
         ?.addEventListener("click", synchronizeClassroom);
 
-    document.getElementById("disconnectBtn")
+    getElement("disconnectBtn")
         ?.addEventListener("click", disconnectGoogle);
 
-    document.getElementById("themeToggle")
+    getElement("themeToggle")
         ?.addEventListener("click", toggleTheme);
 
-    document.getElementById("searchInput")
+    getElement("searchInput")
         ?.addEventListener("input", renderCourses);
 
-    document.getElementById("statusFilter")
+    getElement("statusFilter")
         ?.addEventListener("change", renderCourses);
 
-    document.getElementById("semesterFilter")
+    getElement("semesterFilter")
         ?.addEventListener("change", renderCourses);
 
-    document.getElementById("coursesSearchInput")
+    getElement("coursesSearchInput")
         ?.addEventListener("input", renderCourses);
 
-    document.getElementById("coursesStatusFilter")
+    getElement("coursesStatusFilter")
         ?.addEventListener("change", renderCourses);
 
-    document.getElementById("coursesSemesterFilter")
+    getElement("coursesSemesterFilter")
         ?.addEventListener("change", renderCourses);
-    document.getElementById("exportBtn")
+
+    getElement("exportBtn")
         ?.addEventListener("click", exportReport);
 
-    document.getElementById("exportDetailBtn")
+    getElement("exportDetailBtn")
         ?.addEventListener("click", exportDetailReport);
 
     initializeFindingFilters();
